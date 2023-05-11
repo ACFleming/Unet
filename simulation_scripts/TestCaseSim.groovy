@@ -1,0 +1,172 @@
+import org.arl.unet.mac.CSMA
+import groovy.lang.MissingMethodException
+//! Simulation: ALOHA-AN
+///////////////////////////////////////////////////////////////////////////////
+/// 
+/// To run simulation:
+///   bin/unet ALOHA-AN/TestCaseSim.groovy
+///
+/// Output trace file: logs/trace.nam
+/// Reference:
+/// N. Chirdchoo, W.S. Soh, K.C. Chua (2007), Aloha-based MAC Protocols with
+/// Collision Avoidance for Underwater Acoustic Networks, in Proceedings of
+/// IEEE INFOCOM 2007.
+/// Modified and adapted by A.C.Fleming (QinetiQ Australia 05/2023)
+///////////////////////////////////-////////////////////////////////////////////
+
+import org.arl.fjage.*
+import org.arl.unet.*
+import org.arl.unet.phy.*
+import org.arl.unet.sim.*
+import org.arl.unet.sim.channels.*
+import static org.arl.unet.Services.*
+import static org.arl.unet.phy.Physical.*
+import org.arl.fjage.Agent.*
+
+
+println '''
+Aloha-AN simulation
+===================
+'''
+
+///////////////////////////////////////////////////////////////////////////////
+// modem and channel model to use
+
+modem.dataRate = [2400, 2400].bps
+modem.frameLength = [4, 300].bytes
+modem.preambleDuration = 0
+modem.txDelay = 0
+modem.clockOffset = 0.s
+modem.headerLength = 0.s
+
+channel.model = ProtocolChannelModel
+channel.soundSpeed = 1500.mps
+channel.communicationRange = 5.km
+channel.interferenceRange = 5.km
+channel.detectionRange = 5.km
+
+// platform = org.arl.fjage.RealTimePlatform
+
+///////////////////////////////////////////////////////////////////////////////
+// simulation settings
+def node_count = 3
+
+def load_range = [1.0, 1.5, 0.1] 
+def T = 60.minutes                       // simulation horizon
+trace.warmup =  6.minutes             // collect statistics after a while
+
+locations = [
+    [-1.km,  1.km, -10.m],
+    [ 0.km,  1.km, -10.m],
+    [ 1.km,  1.km, -10.m],
+    [-1.km,  0.km, -10.m],
+    [ 0.km,  0.km, -10.m],
+    [ 1.km,  0.km, -10.m],
+    [-1.km, -1.km, -10.m],
+    [ 0.km, -1.km, -10.m],
+    [ 1.km, -1.km, -10.m],
+]
+
+
+///////////////////////////////////////////////////////////////////////////////
+// simulation details
+
+def node_locations = []
+def api_list = []
+def web_list = []
+def address_list = []
+def api_base = 1101
+def web_base = 8081
+def address_base = 1
+for(int i = 0; i < node_count; i++){
+    node_locations.add(locations[i])
+    api_list.add(api_base+i)
+    web_list.add(web_base+i)
+    address_list.add(address_base+i)
+}
+
+
+def mac_name = "ALOHA"
+def scenario_name = "3"
+def file_name = "results/" + mac_name + scenario_name
+
+// print "Nodes in test sim"
+println """TX Count\tRX Count\tLoss %\t\tOffered Load\tThroughput
+--------\t--------\t------\t\t------------\t----------"""   
+
+File out = new File(file_name)
+out.text = ''
+out << "trace.txCount, trace.rxCount, loss, load,trace.offeredLoad, trace.throughput\n"
+
+// simulate at various arrival rates
+for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
+    
+    simulate T,{
+
+        def node_list = []
+
+        // setup 4 nodes identically
+        for(int n = 0; n < node_count; n++ ){
+            // divide network load across nodes evenly
+            // print "Nodes in test sim"
+            // print nodes.size()
+
+            float loadPerNode = load/node_count    
+            
+            switch(mac_name) {
+                case "ALOHA":
+                    def macAgent = new AlohaAN()
+                break
+                case "SFAMA":
+                    def macAgent = new SlottedFama()
+                break
+                case "CSMA":
+                    def macAgent = new CSMA()
+                break
+                default:
+                    def macAgent = new AlohaAN()
+                break
+            }
+
+            
+            
+            node_list << node("Node${n}", address: address_list[n], location: node_locations[n] , web: web_list[n], api:api_list[n],  stack : { container -> 
+            container.add 'arp',            new org.arl.unet.addr.AddressResolution()
+            container.add 'ranging',        new org.arl.unet.localization.Ranging()
+            container.add 'uwlink',         new org.arl.unet.link.ReliableLink()
+            container.add 'transport',      new org.arl.unet.transport.SWTransport()
+            container.add 'router',         new org.arl.unet.net.Router()
+            container.add 'rdp',            new org.arl.unet.net.RouteDiscoveryProtocol()
+            container.add 'mac',            macAgent 
+            })    
+            try{
+                macAgent.initParams(address_list,node_locations,channel, modem)
+            } catch (MissingMethodException e1){
+                // println e1.toString()
+                
+            }
+            
+            destNodes = address_list.minus(address_list[n])
+            // print "${destNodes} ${loadPerNode} ${macAgent.timerCtsTimeoutOpMode} ${macAgent.maxPropagationDelay} ${macAgent.dataMsgDuration} ${macAgent.controlMsgDuration}"
+            // print macAgent.getParameterList()
+            // print macAgent.get
+            // macAgent.getParameterList().each { param_name ->
+            //     print macAgent.
+            // }
+            container.add 'load', new LoadGenerator(destNodes, loadPerNode) 
+        } // each
+
+
+
+    }  // simulate
+
+    // display statistics
+    float loss = trace.txCount ? 100*trace.dropCount/trace.txCount : 0
+    println sprintf('%6d\t\t%6d\t\t%5.1f\t\t%7.3f\t\t%7.3f',
+        [trace.txCount, trace.rxCount, loss, load, trace.throughput])
+
+    // save to file
+    out << "${trace.txCount}, ${trace.rxCount}, ${loss}, ${load},${trace.offeredLoad}, ${trace.throughput}\n"
+
+}
+

@@ -1,0 +1,6 @@
+LICENSE.txt
+lib/*
+samples/*
+bin/*
+*.txt
+.vscode/*
