@@ -1,5 +1,6 @@
 import org.arl.unet.mac.CSMA
 import groovy.lang.MissingMethodException
+import org.apache.commons.lang3.time.DateUtils
 //! Simulation: ALOHA-AN
 ///////////////////////////////////////////////////////////////////////////////
 /// 
@@ -22,6 +23,9 @@ import org.arl.unet.sim.channels.*
 import static org.arl.unet.Services.*
 import static org.arl.unet.phy.Physical.*
 import org.arl.fjage.Agent.*
+// import java.util.Date;
+import java.text.SimpleDateFormat
+
 
 
 println '''
@@ -49,7 +53,7 @@ channel.detectionRange = 5.km
 
 ///////////////////////////////////////////////////////////////////////////////
 // simulation settings
-def node_count = 3
+def node_count = 9
 
 def load_range = [1.0, 1.5, 0.1] 
 def T = 60.minutes                       // simulation horizon
@@ -68,6 +72,19 @@ locations = [
 ]
 
 
+transmitters = [
+ false,
+ false,
+ true,
+ false,
+ true,
+ false,
+ true,
+ true,
+ false
+]
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // simulation details
 
@@ -75,6 +92,7 @@ def node_locations = []
 def api_list = []
 def web_list = []
 def address_list = []
+def tx_flag = []
 def api_base = 1101
 def web_base = 8081
 def address_base = 1
@@ -83,14 +101,19 @@ for(int i = 0; i < node_count; i++){
     api_list.add(api_base+i)
     web_list.add(web_base+i)
     address_list.add(address_base+i)
+    tx_flag.add(transmitters[i])
 }
 
 
-def mac_name = "ALOHA"
-def scenario_name = "3"
-def file_name = "results/" + mac_name + scenario_name
+def mac_name = "SFAMA"
+def scenario_name = "test"
+def date = new Date()
+def sdf = new SimpleDateFormat("HH-mm-ss")
+def time =  sdf.format(date)
+def file_name = "results/" + mac_name  + "_"+ scenario_name
+// file_name +=  "_"+ time
 
-// print "Nodes in test sim"
+ 
 println """TX Count\tRX Count\tLoss %\t\tOffered Load\tThroughput
 --------\t--------\t------\t\t------------\t----------"""   
 
@@ -113,18 +136,19 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
 
             float loadPerNode = load/node_count    
             
+            def macAgent = new AlohaAN()
             switch(mac_name) {
                 case "ALOHA":
-                    def macAgent = new AlohaAN()
+                    macAgent = new AlohaAN()
                 break
                 case "SFAMA":
-                    def macAgent = new SlottedFama()
+                    macAgent = new SlottedFama()
                 break
                 case "CSMA":
-                    def macAgent = new CSMA()
+                    macAgent = new MyCSMA()
                 break
                 default:
-                    def macAgent = new AlohaAN()
+                    macAgent = new AlohaAN()
                 break
             }
 
@@ -147,13 +171,10 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
             }
             
             destNodes = address_list.minus(address_list[n])
-            // print "${destNodes} ${loadPerNode} ${macAgent.timerCtsTimeoutOpMode} ${macAgent.maxPropagationDelay} ${macAgent.dataMsgDuration} ${macAgent.controlMsgDuration}"
-            // print macAgent.getParameterList()
-            // print macAgent.get
-            // macAgent.getParameterList().each { param_name ->
-            //     print macAgent.
-            // }
-            container.add 'load', new LoadGenerator(destNodes, loadPerNode) 
+            if(tx_flag[n] == true){
+                container.add 'load', new LoadGenerator(destNodes, loadPerNode) 
+            }
+            
         } // each
 
 

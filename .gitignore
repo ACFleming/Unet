@@ -4,3 +4,5 @@ samples/*
 bin/*
 *.txt
 .vscode/*
+*.json
+logs/*
