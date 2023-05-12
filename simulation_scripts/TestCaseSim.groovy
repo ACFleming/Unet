@@ -25,6 +25,8 @@ import static org.arl.unet.phy.Physical.*
 import org.arl.fjage.Agent.*
 // import java.util.Date;
 import java.text.SimpleDateFormat
+import org.arl.unet.sim.Tracer
+import org.arl.unet.sim.NamTracer
 
 
 
@@ -55,9 +57,9 @@ channel.detectionRange = 5.km
 // simulation settings
 def node_count = 9
 
-def load_range = [1.0, 1.5, 0.1] 
-def T = 60.minutes                       // simulation horizon
-trace.warmup =  6.minutes             // collect statistics after a while
+def load_range = [0.1, 1.5, 0.1] 
+def T = 100.minutes                       // simulation horizon
+trace.warmup =  10.minutes             // collect statistics after a while
 
 locations = [
     [-1.km,  1.km, -10.m],
@@ -73,14 +75,14 @@ locations = [
 
 
 transmitters = [
- false,
- false,
  true,
  false,
- true,
  false,
- true,
- true,
+ false,
+ false,
+ false,
+ false,
+ false,
  false
 ]
 
@@ -105,8 +107,8 @@ for(int i = 0; i < node_count; i++){
 }
 
 
-def mac_name = "SFAMA"
-def scenario_name = "test"
+def mac_name = "CSMA"
+def scenario_name = "limit"
 def date = new Date()
 def sdf = new SimpleDateFormat("HH-mm-ss")
 def time =  sdf.format(date)
@@ -114,12 +116,13 @@ def file_name = "results/" + mac_name  + "_"+ scenario_name
 // file_name +=  "_"+ time
 
  
-println """TX Count\tRX Count\tLoss %\t\tOffered Load\tThroughput
---------\t--------\t------\t\t------------\t----------"""   
+println "{load},\t {dropCount},\t {enqueCount},\t {simLoad},\t {meanDelay},\t {offeredLoard},\t {rxCount},\t {throughput},\t {txCount},\t {loss}"
+
+// --------\t--------\t------\t\t------------\t----------"""   
 
 File out = new File(file_name)
 out.text = ''
-out << "trace.txCount, trace.rxCount, loss, load,trace.offeredLoad, trace.throughput\n"
+// out << "trace.txCount, trace.rxCount, loss, load,trace.offeredLoad, trace.throughput\n"
 
 // simulate at various arrival rates
 for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
@@ -172,7 +175,7 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
             
             destNodes = address_list.minus(address_list[n])
             if(tx_flag[n] == true){
-                container.add 'load', new LoadGenerator(destNodes, loadPerNode) 
+                container.add 'load', new TransferGenerator(destNodes, loadPerNode) 
             }
             
         } // each
@@ -180,14 +183,26 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
 
 
     }  // simulate
-
+    // assert trace.getClass() == NamTracer
     // display statistics
-    float loss = trace.txCount ? 100*trace.dropCount/trace.txCount : 0
-    println sprintf('%6d\t\t%6d\t\t%5.1f\t\t%7.3f\t\t%7.3f',
-        [trace.txCount, trace.rxCount, loss, load, trace.throughput])
+    def dropCount = String.format("%8d",trace.getDropCount())
+    def enqueCount = String.format("%8d", trace.getEnqueueCount())
+    def simLoad = String.format("%2.6f", trace.getLoad())
+    def meanDelay = String.format("%2.6f", trace.getMeanDelay())
+    def offeredLoard = String.format("%2.6f", trace.getOfferedLoad())
+    def rxCount = String.format("%8d", trace.getRxCount())
+    def throughput = String.format("%2.6f",trace.getThroughput())
+    def txCount = String.format("%8d", trace.getTxCount())
+    def loss = trace.txCount ? trace.dropCount/trace.txCount : 0
+    loss = String.format("%2.6f",loss)
+    loadVal = String.format("%8g", load)
+    
+    // println sprintf('%6d\t\t%6d\t\t%5.1f\t\t%7.3f\t\t%7.3f',
+    //     [trace.txCount, trace.rxCount, loss, load, trace.throughput, trace.offeredLoad, tra])
+    println "${loadVal},\t ${dropCount},\t ${enqueCount},\t ${simLoad},\t ${meanDelay},\t ${offeredLoard},\t ${rxCount},\t ${throughput},\t ${txCount},\t ${loss}"
 
     // save to file
-    out << "${trace.txCount}, ${trace.rxCount}, ${loss}, ${load},${trace.offeredLoad}, ${trace.throughput}\n"
+    // out << "${trace.txCount}, ${trace.rxCount}, ${loss}, ${load},${trace.offeredLoad}, ${trace.throughput}\n"
 
 }
 

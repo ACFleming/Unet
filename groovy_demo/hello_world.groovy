@@ -18,3 +18,8 @@ def sdf = new SimpleDateFormat("HH-mm-ss")
 def s =  sdf.format(date)
 print s.getClass()
 // println date.ge
+
+
+def x = 8000.0
+
+print x.round(7)

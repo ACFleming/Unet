@@ -35,6 +35,7 @@ channel = [
 trace.warmup =  10.minutes 
 ///////////////////////////////////////////////////////////////////////////////
 // simulation details
+println trace
 
 simulate {
   def n1 = node 'I', address: 21, location: [-30.m, 0.m,  -5.m], web: 8081, api: 1101, shell: true
