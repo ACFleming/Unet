@@ -1,6 +1,7 @@
 import org.arl.unet.mac.CSMA
 import groovy.lang.MissingMethodException
 import org.apache.commons.lang3.time.DateUtils
+import org.apache.commons.lang3.RandomUtils
 //! Simulation: ALOHA-AN
 ///////////////////////////////////////////////////////////////////////////////
 /// 
@@ -55,7 +56,7 @@ channel.detectionRange = 5.km
 
 ///////////////////////////////////////////////////////////////////////////////
 // simulation settings
-def node_count = 2
+def node_count = 8
 
 def load_range = [0.1, 1.5, 0.1] 
 def T = 100.minutes                       // simulation horizon
@@ -63,13 +64,6 @@ def T = 100.minutes                       // simulation horizon
 
 locations = [
     [-1.km,  1.km, -10.m],
-    [ 0.km,  1.km, -10.m],
-    [ 1.km,  1.km, -10.m],
-    [-1.km,  0.km, -10.m],
-    [ 0.km,  0.km, -10.m],
-    [ 1.km,  0.km, -10.m],
-    [-1.km, -1.km, -10.m],
-    [ 0.km, -1.km, -10.m],
     [ 1.km, -1.km, -10.m],
 ]
 
@@ -79,8 +73,7 @@ transmitters = [
  false,
  false,
  false,
- false,
- false,
+ true,
  false,
  false,
  false
@@ -98,8 +91,20 @@ def tx_flag = []
 def api_base = 1101
 def web_base = 8081
 def address_base = 1
+println node_count/2
 for(int i = 0; i < node_count; i++){
-    node_locations.add(locations[i])
+    def theta = RandomUtils.nextFloat(0, 2*3.14159)
+    def radius = RandomUtils.nextFloat(0,500)
+    if(i < node_count/2){
+        pos = [locations[0][0]+radius*Math.cos(theta), locations[0][1]+radius*Math.sin(theta)]
+        
+    }else{
+        pos = [locations[1][0]+radius*Math.cos(theta), locations[1][1]+radius*Math.sin(theta)]
+        
+    }
+    
+    node_locations.add(pos)
+    println pos
     api_list.add(api_base+i)
     web_list.add(web_base+i)
     address_list.add(address_base+i)
@@ -107,8 +112,8 @@ for(int i = 0; i < node_count; i++){
 }
 
 
-def mac_name = "ALOHA"
-def scenario_name = "counting"
+def mac_name = "CSMA"
+def scenario_name = "cluster"
 def date = new Date()
 def sdf = new SimpleDateFormat("HH-mm-ss")
 def time =  sdf.format(date)
@@ -172,8 +177,19 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
                 println e1.toString()
                 
             }
-            
-            destNodes = address_list.minus(address_list[n])
+            def destNodes = []
+            // print address_list
+            if(n < node_count/2){
+                // println "${0..(node_count/2)-1}"
+                destNodes = address_list[0..<(node_count/2)-1]
+            }else{
+                // println 'b'
+                destNodes = address_list[(node_count/2)..(node_count-1)]
+            }
+            destNodes = destNodes.minus(address_list[n])
+            // println destNodes
+
+            // destNodes = address_list.minus(address_list[n])
             if(tx_flag[n] == true){
                 container.add 'load', new TransferGenerator(destNodes, loadPerNode) 
             }

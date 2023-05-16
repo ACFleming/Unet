@@ -20,6 +20,9 @@ print s.getClass()
 // println date.ge
 
 
-def x = 8000.0
+def x = 0.1000
+def y = String.format("%06.4f", x)
 
-print x.round(7)
+print y
+
+print "${0..<(8/2)}"

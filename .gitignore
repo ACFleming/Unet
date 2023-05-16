@@ -6,3 +6,4 @@ bin/*
 .vscode/*
 *.json
 logs/*
+*.log

@@ -1,6 +1,7 @@
 import org.arl.unet.mac.CSMA
 import groovy.lang.MissingMethodException
 import org.apache.commons.lang3.time.DateUtils
+import org.apache.commons.lang3.RandomUtils
 //! Simulation: ALOHA-AN
 ///////////////////////////////////////////////////////////////////////////////
 /// 
@@ -55,7 +56,7 @@ channel.detectionRange = 5.km
 
 ///////////////////////////////////////////////////////////////////////////////
 // simulation settings
-def node_count = 2
+def node_count = 9
 
 def load_range = [0.1, 1.5, 0.1] 
 def T = 100.minutes                       // simulation horizon
@@ -75,7 +76,7 @@ locations = [
 
 
 transmitters = [
- true,
+ false,
  false,
  false,
  false,
@@ -99,7 +100,11 @@ def api_base = 1101
 def web_base = 8081
 def address_base = 1
 for(int i = 0; i < node_count; i++){
-    node_locations.add(locations[i])
+    def theta = RandomUtils.nextFloat(0, 2*3.14159)
+    def radius = RandomUtils.nextFloat(0,500)
+    pos = [locations[i][0]+radius*Math.cos(theta), locations[i][1]+radius*Math.sin(theta)]
+    node_locations.add(pos)
+    println pos
     api_list.add(api_base+i)
     web_list.add(web_base+i)
     address_list.add(address_base+i)
@@ -127,7 +132,7 @@ out << "{load}, {dropCount}, {enqueCount}, {simLoad}, {meanDelay}, {offeredLoard
 // simulate at various arrival rates
 for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
     
-    simulate T,{
+    simulate {
 
         def node_list = []
 

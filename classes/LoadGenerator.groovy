@@ -31,6 +31,7 @@ class LoadGenerator extends UnetAgent {
         add new PoissonBehavior((int)(1000/rate), {              
             // create Poisson arrivals at given rate
             def target = rnditem(destNodes)
+            // target = destNodes[0]
             // print "Sending to ${target}\n"
             mac << new ReservationReq(to: target, duration: dataPktDuration)
         })
@@ -45,6 +46,8 @@ class LoadGenerator extends UnetAgent {
             phy << new ClearReq()                                   // stop any ongoing transmission or reception
             phy << new TxFrameReq(to: msg.to, type: Physical.DATA , data : data_msg.encode([ data : 25]), protocol : Protocol.USER )             
 
+        }else{
+            print "${msg}\n"
         }
     }
 

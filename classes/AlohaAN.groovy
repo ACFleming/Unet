@@ -218,6 +218,7 @@ class AlohaAN extends UnetAgent {
     
     private void sendNtf(ReservationReq msg)
     {
+        // print "Attempt to send\n"
 //for maintaining a list that stores node's ntf and data transmission times, along with other info
         int destination    = msg.to
         long startTimeNtf  = getCurrentTime()  
@@ -239,7 +240,7 @@ class AlohaAN extends UnetAgent {
 
 //check if modem is busy sending
         transmissionClashCheckFlag = transmissionClashCheck(NTF_PACKET)
-
+        // print "Transmission flag ${transmissionClashCheckFlag}\n"
         if (transmissionClashCheckFlag == 0) 
         {
 //check if transmission can result in collisions                
@@ -258,7 +259,7 @@ class AlohaAN extends UnetAgent {
                 else
                 {
 
-                    
+                    // print "\n\nYAY\n\n"
                     phy << new ClearReq()
                     rxDisable()
                     phy << new TxFrameReq(to: Address.BROADCAST, type: Physical.CONTROL , data : ntfMsg.encode([ destinationNodeAddress : destination ]))
@@ -267,6 +268,7 @@ class AlohaAN extends UnetAgent {
             }
             else
             {
+                // print "Collision backoff\n"
                 //packet is backed off and sending slots updated as collision check returns negative
                 int bo = deferTransmissionsCollisionCheck(tSlot) 
                 tSlot.backoffCount = 1  
@@ -275,6 +277,7 @@ class AlohaAN extends UnetAgent {
         }           
         else 
         {
+            // print "Transmission backoff\n"
             //packet is backed off and transmission slots updated as modem is busy transmitting
             int bo = deferTransmissionsCollisionCheck(tSlot) 
             tSlot.backoffCount = 1  
@@ -308,6 +311,7 @@ class AlohaAN extends UnetAgent {
                         collisionCheckFlag = collisionCheck(DATA_PACKET,tSlot.destination)
                         if(collisionCheckFlag == 0)
                         {
+                            
                             //node is clear to send data, as checks have returned affirmative, so send a request to abort any ongoing reception and turn off receiver
                             phy << new ClearReq()
                             rxDisable()
@@ -322,8 +326,11 @@ class AlohaAN extends UnetAgent {
                               inReplyTo: tSlot.msgID,
                               to: tSlot.destination,
                               status: ReservationStatus.END)
-                            send ntf1                                    // send START reservation notification
+                            send ntf1
+                            print "Node: ${node.getName()} sent a message\n"      
+                            // print "${dataMsgDuration}\n"                              // send START reservation notification
                             add new WakerBehavior(dataMsgDuration, 
+                            
                             {    // wait for reservation duration
                               send ntf2   
                               clearTransmissionSlot(tSlot.key)  //after transmission is over, clear the entry in the list for the transmission
@@ -369,7 +376,7 @@ class AlohaAN extends UnetAgent {
 
     private void backoff(int bo, TransmissionSlot tSlot)
     {
-                       
+        // print "BACKING OFF\n"            
         add new BackoffBehavior(bo*dataMsgDuration, {
             if(tSlot != null)
             {
