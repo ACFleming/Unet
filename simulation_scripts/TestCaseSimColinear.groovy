@@ -1,7 +1,6 @@
 import org.arl.unet.mac.CSMA
 import groovy.lang.MissingMethodException
 import org.apache.commons.lang3.time.DateUtils
-import org.apache.commons.lang3.RandomUtils
 //! Simulation: ALOHA-AN
 ///////////////////////////////////////////////////////////////////////////////
 /// 
@@ -20,6 +19,7 @@ import org.arl.fjage.*
 import org.arl.unet.*
 import org.arl.unet.phy.*
 import org.arl.unet.sim.*
+import org.arl.unet.net.*
 import org.arl.unet.sim.channels.*
 import static org.arl.unet.Services.*
 import static org.arl.unet.phy.Physical.*
@@ -56,15 +56,19 @@ channel.detectionRange = 5.km
 
 ///////////////////////////////////////////////////////////////////////////////
 // simulation settings
-def node_count = 8
+def node_count = 5
 
 def load_range = [0.1, 1.5, 0.1] 
 def T = 100.minutes                       // simulation horizon
 // trace.warmup =  0.minutes             // collect statistics after a while
 
 locations = [
-    [-1.km,  1.km, -10.m],
-    [ 1.km, -1.km, -10.m],
+    [ 0.km,  0.km, -10.m],
+    [ 4.km,  0.km, -10.m],
+    [ 8.km,  0.km, -10.m],
+    [12.km,  0.km, -10.m],
+    [16.km,  0.km, -10.m],
+
 ]
 
 
@@ -74,9 +78,6 @@ transmitters = [
  false,
  false,
  true,
- false,
- false,
- false
 ]
 
 
@@ -91,20 +92,8 @@ def tx_flag = []
 def api_base = 1101
 def web_base = 8081
 def address_base = 1
-println node_count/2
 for(int i = 0; i < node_count; i++){
-    def theta = RandomUtils.nextFloat(0, 2*3.14159)
-    def radius = RandomUtils.nextFloat(0,500)
-    if(i < node_count/2){
-        pos = [locations[0][0]+radius*Math.cos(theta), locations[0][1]+radius*Math.sin(theta)]
-        
-    }else{
-        pos = [locations[1][0]+radius*Math.cos(theta), locations[1][1]+radius*Math.sin(theta)]
-        
-    }
-    
-    node_locations.add(pos)
-    println pos
+    node_locations.add(locations[i])
     api_list.add(api_base+i)
     web_list.add(web_base+i)
     address_list.add(address_base+i)
@@ -113,7 +102,7 @@ for(int i = 0; i < node_count; i++){
 
 
 def mac_name = "CSMA"
-def scenario_name = "cluster"
+def scenario_name = "colinear"
 def date = new Date()
 def sdf = new SimpleDateFormat("HH-mm-ss")
 def time =  sdf.format(date)
@@ -132,7 +121,7 @@ out << "{load}, {dropCount}, {enqueCount}, {simLoad}, {meanDelay}, {offeredLoard
 // simulate at various arrival rates
 for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
     
-    simulate T,{
+    simulate T, {
 
         def node_list = []
 
@@ -177,22 +166,20 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
                 println e1.toString()
                 
             }
-            def destNodes = []
-            // print address_list
-            if(n < node_count/2){
-                // println "${0..(node_count/2)-1}"
-                destNodes = address_list[0..<(node_count/2)-1]
-            }else{
-                // println 'b'
-                destNodes = address_list[(node_count/2)..(node_count-1)]
-            }
-            destNodes = destNodes.minus(address_list[n])
-            // println destNodes
-
+            destNodes = []
             // destNodes = address_list.minus(address_list[n])
-            if(tx_flag[n] == true){
-                container.add 'load', new LoadGenerator(destNodes, loadPerNode) 
+            // for(i in destNodes){
+            //     container['router'].send(new GetRouteReq(all:true, to: destNodes[i]))
+            // }
+            if(n==0){
+                destNodes = [address_list[4]]
+            }else if(n==4){
+                destNodes = [address_list[0]]
             }
+            // println destNodes
+            
+            container.add 'load', new TransportGenerator(destNodes, loadPerNode, tx_flag[n]) 
+            
             
         } // each
 

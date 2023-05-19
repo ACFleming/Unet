@@ -1,7 +1,6 @@
 import org.arl.unet.mac.CSMA
 import groovy.lang.MissingMethodException
 import org.apache.commons.lang3.time.DateUtils
-import org.apache.commons.lang3.RandomUtils
 //! Simulation: ALOHA-AN
 ///////////////////////////////////////////////////////////////////////////////
 /// 
@@ -20,6 +19,7 @@ import org.arl.fjage.*
 import org.arl.unet.*
 import org.arl.unet.phy.*
 import org.arl.unet.sim.*
+import org.arl.unet.net.*
 import org.arl.unet.sim.channels.*
 import static org.arl.unet.Services.*
 import static org.arl.unet.phy.Physical.*
@@ -48,23 +48,30 @@ modem.headerLength = 0.s
 
 channel.model = ProtocolChannelModel
 channel.soundSpeed = 1500.mps
-channel.communicationRange = 5.km
-channel.interferenceRange = 5.km
-channel.detectionRange = 5.km
+channel.communicationRange = 1.5.km
+channel.interferenceRange = 1.5.km
+channel.detectionRange = 1.5.km
 
 // platform = org.arl.fjage.RealTimePlatform
 
 ///////////////////////////////////////////////////////////////////////////////
 // simulation settings
-def node_count = 8
+def node_count = 9
 
 def load_range = [0.1, 1.5, 0.1] 
 def T = 100.minutes                       // simulation horizon
 // trace.warmup =  0.minutes             // collect statistics after a while
 
 locations = [
-    [-1.km,  1.km, -10.m],
-    [ 1.km, -1.km, -10.m],
+    [0.km, 1.732.km, -10.m],
+    [-0.5.km, 0.866.km, -10.m],
+    [0.5.km, 0.866.km, -10.m],
+    [-1.km, 0.km, -10.m],
+    [ 0.km,  0.km, -10.m],
+    [1.km, 0.km, -10.m],
+    [-0.5.km, -0.866.km, -10.m],
+    [0.5.km, -0.866.km, -10.m],
+    [0.km, -1.732.km, -10.m]
 ]
 
 
@@ -73,10 +80,36 @@ transmitters = [
  false,
  false,
  false,
+ false,
+ false,
+ false,
+ false,
  true,
- false,
- false,
- false
+]
+
+
+def routing_steps = [
+    [[]     ,[2]    ,[3]    ,[2]    ,[3,2]  ,[3]    ,[2,3]  ,[2,3]  ,[2,3]  ],
+    [[1]    ,[]     ,[3]    ,[4]    ,[5]    ,[3,5]  ,[4,5]  ,[5]    ,[4,5]  ],
+    [[1]    ,[2]    ,[]     ,[2,5]  ,[5]    ,[6]    ,[5]    ,[5,6]  ,[5,6]  ],
+    [[2]    ,[2]    ,[2,5]  ,[]     ,[5]    ,[5]    ,[7]    ,[5,7]  ,[7]    ],
+    [[3,2]  ,[2]    ,[3]    ,[4]    ,[]     ,[6]    ,[7]    ,[8]    ,[7,8]  ],
+    [[3]    ,[3,5]  ,[3]    ,[5]    ,[5]    ,[]     ,[5,8]  ,[8]    ,[8]    ],
+    [[5,4]  ,[4,5]  ,[5]    ,[4]    ,[5]    ,[5,8]  ,[]     ,[8]    ,[9]    ],
+    [[6,5]  ,[5]    ,[5,6]  ,[5,7]  ,[5]    ,[6]    ,[7]    ,[]     ,[9]    ],
+    [[8,7]  ,[7,8]  ,[7,8]  ,[7]    ,[7,8]  ,[8]    ,[7]    ,[8]    ,[]     ]
+]
+
+def routing_dist = [
+    [0,1,1,2,2,2,3,3,4],
+    [1,0,1,1,1,2,2,2,3],
+    [1,1,0,2,1,1,2,2,3],
+    [2,1,2,0,1,2,1,2,2],
+    [2,1,1,1,0,1,1,1,2],
+    [2,2,1,2,1,0,2,1,2],
+    [3,2,2,1,1,2,0,1,1],
+    [3,2,2,2,1,1,1,0,1],
+    [4,3,3,2,2,2,1,1,0]
 ]
 
 
@@ -91,20 +124,8 @@ def tx_flag = []
 def api_base = 1101
 def web_base = 8081
 def address_base = 1
-println node_count/2
 for(int i = 0; i < node_count; i++){
-    def theta = RandomUtils.nextFloat(0, 2*3.14159)
-    def radius = RandomUtils.nextFloat(0,500)
-    if(i < node_count/2){
-        pos = [locations[0][0]+radius*Math.cos(theta), locations[0][1]+radius*Math.sin(theta)]
-        
-    }else{
-        pos = [locations[1][0]+radius*Math.cos(theta), locations[1][1]+radius*Math.sin(theta)]
-        
-    }
-    
-    node_locations.add(pos)
-    println pos
+    node_locations.add(locations[i])
     api_list.add(api_base+i)
     web_list.add(web_base+i)
     address_list.add(address_base+i)
@@ -113,7 +134,7 @@ for(int i = 0; i < node_count; i++){
 
 
 def mac_name = "CSMA"
-def scenario_name = "cluster"
+def scenario_name = "equidistant_opposite_path"
 def date = new Date()
 def sdf = new SimpleDateFormat("HH-mm-ss")
 def time =  sdf.format(date)
@@ -131,8 +152,8 @@ out << "{load}, {dropCount}, {enqueCount}, {simLoad}, {meanDelay}, {offeredLoard
 
 // simulate at various arrival rates
 for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
-    
-    simulate T,{
+    // print address_list
+    simulate T, {
 
         def node_list = []
 
@@ -145,6 +166,7 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
             float loadPerNode = load/node_count    
             
             def macAgent = new AlohaAN()
+            def routeAdder = new RouteAdder(routing_steps[n], address_list, routing_dist[n])
             switch(mac_name) {
                 case "ALOHA":
                     macAgent = new AlohaAN()
@@ -162,7 +184,7 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
 
             
             
-            node_list << node("Node${n}", address: address_list[n], location: node_locations[n] , web: web_list[n], api:api_list[n],  stack : { container -> 
+            node_list << node("Node${n+1}", address: address_list[n], location: node_locations[n] , web: web_list[n], api:api_list[n],  stack : { container -> 
             container.add 'arp',            new org.arl.unet.addr.AddressResolution()
             container.add 'ranging',        new org.arl.unet.localization.Ranging()
             container.add 'uwlink',         new org.arl.unet.link.ReliableLink()
@@ -170,6 +192,8 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
             container.add 'router',         new org.arl.unet.net.Router()
             container.add 'rdp',            new org.arl.unet.net.RouteDiscoveryProtocol()
             container.add 'mac',            macAgent 
+            container.add 'addingRoutes',   routeAdder 
+            
             })    
             try{
                 macAgent.initParams(address_list,node_locations,channel, modem)
@@ -177,40 +201,26 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
                 println e1.toString()
                 
             }
-            def destNodes = []
-            // print address_list
-            if(n < node_count/2){
-                // println "${0..(node_count/2)-1}"
-                destNodes = address_list[0..<(node_count/2)-1]
-            }else{
-                // println 'b'
-                destNodes = address_list[(node_count/2)..(node_count-1)]
+            // destNodes = []
+            destNodes = address_list.minus(address_list[n])
+            // for(i in destNodes){
+            //     container['router'].send(new GetRouteReq(all:true, to: destNodes[i]))
+            // }
+            if(n==0){
+                destNodes = [address_list[8]]
+            }else if(n==8){
+                destNodes = [address_list[0]]
             }
-            destNodes = destNodes.minus(address_list[n])
             // println destNodes
-
-            // destNodes = address_list.minus(address_list[n])
-            if(tx_flag[n] == true){
-                container.add 'load', new LoadGenerator(destNodes, loadPerNode) 
-            }
+            
+            container.add 'load', new TransportGenerator(address_list,destNodes, loadPerNode, tx_flag[n]) 
+            
             
         } // each
 
 
 
     }  // simulate
-    // assert trace.getClass() == NamTracer
-    // display statistics
-    // def dropCount = trace.getDropCount().round(4)
-    // def enqueCount = trace.getEnqueueCount().round(4)
-    // def simLoad = trace.getLoad().round(4)
-    // def meanDelay = trace.getMeanDelay().round(4)
-    // def offeredLoard = trace.getOfferedLoad().round(4)
-    // def rxCount = trace.getRxCount().round(4)
-    // def throughput = trace.getThroughput().round(4)
-    // def txCount = trace.getTxCount().round(4)
-    // def loss = trace.txCount ? (trace.dropCount/trace.txCount).round(4) : 0
-    // loadVal = load.round(4)
     def dropCount       = String.format("%07.3f",trace.getDropCount().round(4))
     def enqueCount      = String.format("%07.3f", trace.getEnqueueCount().round(4))
     def simLoad         = String.format("%07.3f", trace.getLoad().round(4))

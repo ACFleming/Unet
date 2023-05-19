@@ -1,6 +1,7 @@
 import org.arl.unet.mac.CSMA
 import groovy.lang.MissingMethodException
 import org.apache.commons.lang3.time.DateUtils
+import org.apache.commons.lang3.RandomUtils
 //! Simulation: ALOHA-AN
 ///////////////////////////////////////////////////////////////////////////////
 /// 
@@ -15,6 +16,8 @@ import org.apache.commons.lang3.time.DateUtils
 /// Modified and adapted by A.C.Fleming (QinetiQ Australia 05/2023)
 ///////////////////////////////////-////////////////////////////////////////////
 
+// platform = RealTimePlatform           // use real-time mode
+
 import org.arl.fjage.*
 import org.arl.unet.*
 import org.arl.unet.phy.*
@@ -27,6 +30,8 @@ import org.arl.fjage.Agent.*
 import java.text.SimpleDateFormat
 import org.arl.unet.sim.Tracer
 import org.arl.unet.sim.NamTracer
+import groovy.lang.Closure
+
 
 
 
@@ -55,31 +60,24 @@ channel.detectionRange = 5.km
 
 ///////////////////////////////////////////////////////////////////////////////
 // simulation settings
-def node_count = 2
+def node_count = 5
 
 def load_range = [0.1, 1.5, 0.1] 
 def T = 100.minutes                       // simulation horizon
 // trace.warmup =  0.minutes             // collect statistics after a while
 
 locations = [
-    [-1.km,  1.km, -10.m],
-    [ 0.km,  1.km, -10.m],
-    [ 1.km,  1.km, -10.m],
-    [-1.km,  0.km, -10.m],
-    [ 0.km,  0.km, -10.m],
-    [ 1.km,  0.km, -10.m],
-    [-1.km, -1.km, -10.m],
-    [ 0.km, -1.km, -10.m],
-    [ 1.km, -1.km, -10.m],
+    [0,  0, -10],
+    [573,  0, -10],
+    [573+1146, 0, -10],
+    [573+2*1146,  0, -10],
+    [0, 1000, -10],
+
 ]
 
 
 transmitters = [
  true,
- false,
- false,
- false,
- false,
  false,
  false,
  false,
@@ -98,6 +96,7 @@ def tx_flag = []
 def api_base = 1101
 def web_base = 8081
 def address_base = 1
+def pos = []
 for(int i = 0; i < node_count; i++){
     node_locations.add(locations[i])
     api_list.add(api_base+i)
@@ -107,8 +106,8 @@ for(int i = 0; i < node_count; i++){
 }
 
 
-def mac_name = "ALOHA"
-def scenario_name = "counting"
+def mac_name = "CSMA"
+def scenario_name = "mobile"
 def date = new Date()
 def sdf = new SimpleDateFormat("HH-mm-ss")
 def time =  sdf.format(date)
@@ -127,7 +126,7 @@ out << "{load}, {dropCount}, {enqueCount}, {simLoad}, {meanDelay}, {offeredLoard
 // simulate at various arrival rates
 for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
     
-    simulate T,{
+    simulate T, {
 
         def node_list = []
 
@@ -157,7 +156,7 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
 
             
             
-            node_list << node("Node${n}", address: address_list[n], location: node_locations[n] , web: web_list[n], api:api_list[n],  stack : { container -> 
+            node_list << node("Node${n}", address: address_list[n], location: node_locations[n] , web: web_list[n], api:api_list[n], mobility:true, heading: -5.deg, stack : { container -> 
             container.add 'arp',            new org.arl.unet.addr.AddressResolution()
             container.add 'ranging',        new org.arl.unet.localization.Ranging()
             container.add 'uwlink',         new org.arl.unet.link.ReliableLink()
@@ -175,8 +174,67 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
             
             destNodes = address_list.minus(address_list[n])
             if(tx_flag[n] == true){
-                container.add 'load', new TransferGenerator(destNodes, loadPerNode) 
+                container.add 'load', new LoadGenerator(destNodes, loadPerNode) 
             }
+            
+            if(n==0){
+                
+                def counter = 0
+                node_list[0].motionModel = { ts -> 
+                    def setpoint = [speed: 100.mps, duration: 18.seconds]
+                    // print counter
+                    switch(counter) {
+                        case 0:
+                            // setpoint["heading"] = 0.deg
+                        case 2:
+                            
+                            setpoint["turnRate"] = 10.dps
+                            break
+                        case 3:
+                        case 5:
+                            // setpoint["heading"] = 180.deg
+                            setpoint["turnRate"] = 10.dps
+                        break
+                        case 1:
+                            // setpoint["heading"] = 180.deg
+                            setpoint["turnRate"] = -10.dps
+                            break
+                        case 4:
+                            // setpoint["heading"] = 0.deg
+                            setpoint["turnRate"] = -10.dps
+                        break
+                        default:
+                            setpoint["turnRate"] = 50.dps
+                        break
+                    }
+                    // println setpoint
+                    counter = (counter+1)%6
+                    return setpoint
+                }
+
+
+                // node_list[0].motionModel = { ts -> 
+                //     def setpoint = [speed: 100.mps, duration: 18.seconds]
+                //     def cycle_time = ts%108
+                //     println cycle_time
+                //     if(cycle_time == 0){
+                //         setpoint['heading'] = 0.deg
+                //     }else if (cycle_time <= 18.seconds){
+                //         setpoint["turnRate"] = 10.dps
+                //     }else if (cycle_time <= 36.seconds){
+                //         setpoint["turnRate"] = -10.dps
+                //     }else if (cycle_time <= 72.seconds){
+                //         setpoint["turnRate"] = 10.dps
+                //     }else if (cycle_time <= 90.seconds){
+                //         setpoint["turnRate"] = -10.dps
+                //     }else{
+                //         setpoint["turnRate"] = 10.dps
+                //     }
+                //     return setpoint
+                // }
+            }
+
+            
             
         } // each
 

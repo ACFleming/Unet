@@ -32,6 +32,26 @@ channel = [
 // simulation details
 
 simulate {
-  def s = node 'Here' , location: [0.m, 0.m,  -50.m] ,web: 8081, api: 1101, stack: "$home/etc/setup.groovy"
-  def l = node 'There', location: [0.m, 1000.m,  -50.m],web: 8082, api: 1102, stack: "$home/scripts/attach.groovy", mobility: true
+    def n = node 'B', location: [ 1.km, 0.km, -15.m], web: 8082, api: 1102, stack: "$home/etc/setup", mobility: true
+    counter = 0
+    n.motionModel = { ts -> 
+                    def setpoint = [speed: 100.mps, duration: 18.seconds]
+                    // def cycle_time = ts.remainder(108)
+                    println ts
+                    println cycle_time
+                    // if(cycle_time == 0){
+                    //     setpoint['heading'] = 0.deg
+                    // }else if (cycle_time <= 18.seconds){
+                    //     setpoint["turnRate"] = 10.dps
+                    // }else if (cycle_time <= 36.seconds){
+                    //     setpoint["turnRate"] = -10.dps
+                    // }else if (cycle_time <= 72.seconds){
+                    //     setpoint["turnRate"] = 10.dps
+                    // }else if (cycle_time <= 90.seconds){
+                    //     setpoint["turnRate"] = -10.dps
+                    // }else{
+                    //     setpoint["turnRate"] = 10.dps
+                    // }
+                    return setpoint
+                }
 }

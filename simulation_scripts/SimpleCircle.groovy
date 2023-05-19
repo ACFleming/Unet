@@ -7,7 +7,7 @@ import org.arl.unet.sim.channels.*
 ///////////////////////////////////////////////////////////////////////////////
 // simulation settings
 
-// platform = RealTimePlatform           // use real-time mode
+platform = RealTimePlatform           // use real-time mode
 
 ///////////////////////////////////////////////////////////////////////////////
 // channel and modem settings
@@ -32,7 +32,7 @@ channel = [
     processingGain:       0.dB, // G
 ]
 
-trace.warmup =  10.minutes 
+// trace.warmup =  10.minutes 
 ///////////////////////////////////////////////////////////////////////////////
 // simulation details
 println trace
@@ -41,5 +41,5 @@ simulate {
   def n1 = node 'I', address: 21, location: [-30.m, 0.m,  -5.m], web: 8081, api: 1101, shell: true
   def n2 = node 'J', address: 22, location: [90.m, 0.m, -10.m], web: 8082, api: 1102
   def n3 = node 'K', address: 23, location: [-15.m, 0.m, -15.m], web: 8083, api: 1103, mobility: true
-  n3.motionModel = [speed: 1.mps, turnRate: 5.dps]
+  n3.motionModel = [speed: 10.mps, turnRate: 5.dps]
 }

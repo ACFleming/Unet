@@ -9,7 +9,7 @@ import org.arl.unet.phy.*
 import org.arl.unet.mac.*
 // import org.arl.fjage.TickerBehavior
 
-class TransferGenerator extends UnetAgent {
+class LimitGenerator extends UnetAgent {
 
     private List<Integer> destNodes                     // list of possible destination nodes
     private float load                                  // normalized load to generate
@@ -21,7 +21,7 @@ class TransferGenerator extends UnetAgent {
         uint32('data')
     }
 
-    TransferGenerator(List<Integer> destNodes, float load) {
+    LimitGenerator(List<Integer> destNodes, float load) {
         this.destNodes = destNodes                        
         this.load = load                                  
     }
