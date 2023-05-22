@@ -52,7 +52,7 @@ channel.communicationRange = 1.5.km
 channel.interferenceRange = 1.5.km
 channel.detectionRange = 1.5.km
 
-platform = org.arl.fjage.RealTimePlatform
+// platform = org.arl.fjage.RealTimePlatform
 
 ///////////////////////////////////////////////////////////////////////////////
 // simulation settings
@@ -133,7 +133,7 @@ for(int i = 0; i < node_count; i++){
 }
 
 
-def mac_name = "SFAMA"
+def mac_name = "CSMA"
 def scenario_name = "equidistant_same_path"
 def date = new Date()
 def sdf = new SimpleDateFormat("HH-mm-ss")
@@ -207,7 +207,7 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
             //     container['router'].send(new GetRouteReq(all:true, to: destNodes[i]))
             // }
             if(n==0){
-                destNodes = [address_list[8]]
+                destNodes = [address_list[2]]
             }else if(n==8){
                 destNodes = [address_list[0]]
             }

@@ -61,19 +61,21 @@ class TransportGenerator extends UnetAgent {
         println "Transport Generator : dataPktDuration = ${dataPktDuration}"
         float rate = load/dataPktDuration                 
 
-        add new OneShotBehavior({
+        add new WakerBehavior(1000,{
             // print "ready for mac\n"
             // router << new GetRouteReq(to:9)
-            def rsp = router.request(new GetRouteReq(to:9))
-            print "${rsp}\n"
+            // def rsp = router.request(new GetRouteReq(to:9))
+            // print "${rsp}\n"
             if(this.tx_flag == true){
                 print "SENDER @ ${100/rate}\n"
                 add new PoissonBehavior((int)(100/rate), {              
                     // create Poisson arrivals at given rate
                     def target = rnditem(destNodes)
-                    // target = destNodes[0]
-                    print "Sending to ${target} from ${this.node.address}\n"
-                    mac << new ReservationReq(to: target, duration: dataPktDuration)
+                    // def rsp = router.request(new GetRouteReq(to:9))
+                    // rsp.nextHop = target
+                    // print "Sending to ${target} from ${this.node.address} via ${rsp.nextHop}\n"
+                    // mac << new ReservationReq(to: rsp.nextHop, duration: dataPktDuration)
+                    router << new DatagramReq( to: target, protocol: Protocol.DATA, data : data_msg.encode([ data : 25]))
                 
 
 
@@ -89,19 +91,19 @@ class TransportGenerator extends UnetAgent {
 
     }
 
-    @Override
-    void processMessage(Message msg) {
-        if (msg instanceof ReservationStatusNtf && msg.status == ReservationStatus.START) {
-            print "GOT RESERVATION\n"
-            // phy << new DatagramReq(to: msg.to)
-            router << new DatagramReq( to: msg.to, protocol: Protocol.DATA, data : data_msg.encode([ data : 25]))
-            // counter = counter +1       
-            print "SENT\n"
+    // @Override
+    // void processMessage(Message msg) {
+    //     if (msg instanceof ReservationStatusNtf && msg.status == ReservationStatus.START) {
+    //         print "GOT RESERVATION\n"
+    //         // phy << new DatagramReq(to: msg.to)
+    //         router << new DatagramReq( to: msg.to, protocol: Protocol.DATA, data : data_msg.encode([ data : 25]))
+    //         // counter = counter +1       
+    //         print "SENT\n"
 
-        }else{
-            print "${msg}\n"
-            // if(msg instanceof )
-        }
-    }
+    //     }else{
+    //         print "Received in Transport: ${msg}\n"
+    //         // if(msg instanceof )
+    //     }
+    // }
 
 }

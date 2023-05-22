@@ -192,7 +192,7 @@ class SlottedFama extends UnetAgent {
                 after(timeForNextSlot.milliseconds)
                 {
                     ReservationReq msg = queue.peek()
-                    // print "GOT RESERVATION"
+                    print "Message to send: ${msg}\n"
                     sendReservationStatusNtf(msg, ReservationStatus.START)
                     after(msg.duration)
                     {
@@ -843,7 +843,7 @@ class SlottedFama extends UnetAgent {
 
 
     public void initParams(address_list, List node_locations, channel, modem){
-        print "INIT"
+        // print "INIT"
         def nodes = []
         def nodeCount = address_list.size()
         
@@ -945,7 +945,7 @@ class SlottedFama extends UnetAgent {
     @Override
     Message processRequest(Message msg)
     {
-        print "${msg}\n"
+        print "Received request in SFAMA${msg}\n"
         switch (msg)
         {
             case ReservationReq:
@@ -954,7 +954,7 @@ class SlottedFama extends UnetAgent {
                 if (queue.size() >= MAX_QUEUE_LEN) return new Message(msg, Performative.REFUSE)
                 queue.add(msg)
                 fsm.trigger(Event.RESERVATION_REQ)
-                print "GOT REQUEST\n"
+                // print "GOT REQUEST\n"
                 return new ReservationRsp(msg)
             case ReservationCancelReq:
             case ReservationAcceptReq:
@@ -997,9 +997,10 @@ class SlottedFama extends UnetAgent {
                 }
                 else if (rx.type == CTS_PDU)
                 {
-                    print "RECEIVED CTS\n"
+                    
                     if(info.to == addr)
                     {
+                        print "RECEIVED CTS\n"
                         fsm.trigger(Event.RX_CTS)
                     }
                     else
