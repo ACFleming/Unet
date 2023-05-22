@@ -263,6 +263,7 @@ class AlohaAN extends UnetAgent {
                     phy << new ClearReq()
                     rxDisable()
                     phy << new TxFrameReq(to: Address.BROADCAST, type: Physical.CONTROL , data : ntfMsg.encode([ destinationNodeAddress : destination ]))
+                    println "SENT NTF"
                     sendData(tSlot)                     
                 }               
             }
@@ -807,6 +808,7 @@ class AlohaAN extends UnetAgent {
 
     public Message processRequest(Message msg) 
     {
+        
         switch (msg) {
           case ReservationReq:
             if (msg.duration <= 0) 
@@ -815,11 +817,22 @@ class AlohaAN extends UnetAgent {
             }
             else
             {
+                println "SENDING"
                 sendNtf(msg)                
             }
+            println msg
+            return new ReservationRsp(msg)
           case ReservationCancelReq:
+            println "CANCEL"
+            return new Message(msg, Performative.REFUSE)  
+            break;
           case ReservationAcceptReq:                                  // respond to other requests defined
+            println "ACCEPT"
+            return new Message(msg, Performative.REFUSE)  
+            break;
           case TxAckReq:                                              //  by the MAC service trivially with
+            println "TXACK" 
+            break;
             return new Message(msg, Performative.REFUSE)              //  a REFUSE performative
         }
         return null     

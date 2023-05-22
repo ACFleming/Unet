@@ -98,19 +98,19 @@ class SlottedFama extends UnetAgent {
                 // print slotLength
                 int timeForNextSlot = slotLength - ( (currentTime - startTime) % slotLength )
                 // print "FAIL"
-
+                print 'IDLE\n'
                 after(timeForNextSlot.milliseconds)
                 {
+                    // print 'CHECKING if modem is busy\n'
                     modemBusy = ModemCheck()
-                    if (!modemBusy)
-                    {
+                    if (!modemBusy){
                         if(!queue.isEmpty())
                         {
+                            print "TX State\n"
                             setNextState(State.TX_RTS)
                         }
-                    }
-                    else
-                    {
+                    }else{
+                        print "RECEIVING\n"
                         setNextState(State.RECEIVING)
                     }
                 }
@@ -142,6 +142,9 @@ class SlottedFama extends UnetAgent {
             onEnter
             {
                 Message msg = queue.peek()
+                for(Message m: queue){
+                    print "Message : ${m}\n"
+                }
                 def bytes = controlMsg.encode(type: RTS_PDU, duration: Math.ceil(msg.duration*1000))
                 phy << new ClearReq()
                 phy << new TxFrameReq(to: msg.to, type: Physical.CONTROL, protocol: PROTOCOL, data: bytes)
@@ -167,12 +170,14 @@ class SlottedFama extends UnetAgent {
                     backoffStartTime = GetCurrentTime()
                     backoffEndTime = backoffStartTime + backoff
                     endTimeBackoffCtsTimeout = backoffEndTime
+                    print "BACKOFF\n"
                     setNextState(State.BACKOFF_CTS_TIMEOUT)
                 }
             }
 
             onEvent(Event.RX_CTS)
             {
+                
                 setNextState(State.TX_DATA)
             }
         }
@@ -187,6 +192,7 @@ class SlottedFama extends UnetAgent {
                 after(timeForNextSlot.milliseconds)
                 {
                     ReservationReq msg = queue.peek()
+                    // print "GOT RESERVATION"
                     sendReservationStatusNtf(msg, ReservationStatus.START)
                     after(msg.duration)
                     {
@@ -685,6 +691,9 @@ class SlottedFama extends UnetAgent {
                 backoff = info.duration
                 backoffStartTime = GetCurrentTime()
                 backoffEndTime = backoffStartTime + backoff
+                setNextState(State.BACKOFF_X_CTS)
+                backoffStartTime = GetCurrentTime()
+                backoffEndTime = backoffStartTime + backoff
                 setNextState(State.BACKOFF_X_RTS)
             }
 
@@ -834,7 +843,7 @@ class SlottedFama extends UnetAgent {
 
 
     public void initParams(address_list, List node_locations, channel, modem){
-        // print "INIT"
+        print "INIT"
         def nodes = []
         def nodeCount = address_list.size()
         
@@ -936,19 +945,21 @@ class SlottedFama extends UnetAgent {
     @Override
     Message processRequest(Message msg)
     {
+        print "${msg}\n"
         switch (msg)
         {
             case ReservationReq:
-            if (msg.to == Address.BROADCAST || msg.to == addr) return new Message(msg, Performative.REFUSE)
-            if (msg.duration <= 0 || msg.duration > maxReservationDuration) return new Message(msg, Performative.REFUSE)
-            if (queue.size() >= MAX_QUEUE_LEN) return new Message(msg, Performative.REFUSE)
-            queue.add(msg)
-            fsm.trigger(Event.RESERVATION_REQ)
-            return new ReservationRsp(msg)
+                if (msg.to == Address.BROADCAST || msg.to == addr) return new Message(msg, Performative.REFUSE)
+                if (msg.duration <= 0 || msg.duration > maxReservationDuration) return new Message(msg, Performative.REFUSE)
+                if (queue.size() >= MAX_QUEUE_LEN) return new Message(msg, Performative.REFUSE)
+                queue.add(msg)
+                fsm.trigger(Event.RESERVATION_REQ)
+                print "GOT REQUEST\n"
+                return new ReservationRsp(msg)
             case ReservationCancelReq:
             case ReservationAcceptReq:
             case TxAckReq:
-            return new Message(msg, Performative.REFUSE)
+                return new Message(msg, Performative.REFUSE)
         }
         return null
     }
@@ -956,10 +967,11 @@ class SlottedFama extends UnetAgent {
     @Override
     void processMessage(Message msg)
     {
+        print "${addr} received ${msg}\n"
         if (msg instanceof RxFrameNtf)
         {
             def rx = controlMsg.decode(msg.data)
-            
+            print "RX:${rx}\n"
             long currentTime = GetCurrentTime()
             int timeForNextSlot = slotLength - ( (currentTime - startTime ) % slotLength )
             def info = [from: msg.from, to: msg.to, duration: slotLength]
@@ -973,6 +985,7 @@ class SlottedFama extends UnetAgent {
                 {
                     if(info.to == addr)
                     {
+                        print "RECEIVED RTS\n"
                         info.duration = rx.duration
                         fsm.trigger(Event.RX_RTS, info)
                     }
@@ -984,6 +997,7 @@ class SlottedFama extends UnetAgent {
                 }
                 else if (rx.type == CTS_PDU)
                 {
+                    print "RECEIVED CTS\n"
                     if(info.to == addr)
                     {
                         fsm.trigger(Event.RX_CTS)
@@ -1046,7 +1060,7 @@ class SlottedFama extends UnetAgent {
             }
         }
 
-        if(msg instanceof BadFrameNtf)
+        if(msg instanceof BadFrameNtf || msg instanceof CollisionNtf)
         {
             /*If node receives BadFrameNtf in the state WAIT_FOR_DATA, trigger Event DATA_FRAME_CORRUPTED.
             Else trigger event BADFRAME_NTF. */
@@ -1060,6 +1074,7 @@ class SlottedFama extends UnetAgent {
             }
             else
             {
+                println "BADFRAME\n"
                 fsm.trigger(Event.BADFRAME_NTF, backoff)
             }
         }

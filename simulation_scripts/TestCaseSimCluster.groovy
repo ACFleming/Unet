@@ -112,7 +112,7 @@ for(int i = 0; i < node_count; i++){
 }
 
 
-def mac_name = "CSMA"
+def mac_name = "SFAMA"
 def scenario_name = "cluster"
 def date = new Date()
 def sdf = new SimpleDateFormat("HH-mm-ss")

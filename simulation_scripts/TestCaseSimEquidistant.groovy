@@ -52,7 +52,7 @@ channel.communicationRange = 1.5.km
 channel.interferenceRange = 1.5.km
 channel.detectionRange = 1.5.km
 
-// platform = org.arl.fjage.RealTimePlatform
+platform = org.arl.fjage.RealTimePlatform
 
 ///////////////////////////////////////////////////////////////////////////////
 // simulation settings
@@ -84,7 +84,7 @@ transmitters = [
  false,
  false,
  false,
- true,
+ false,
 ]
 
 
@@ -93,11 +93,11 @@ def routing_steps = [
     [[1]    ,[]     ,[3]    ,[4]    ,[5]    ,[3,5]  ,[4,5]  ,[5]    ,[4,5]  ],
     [[1]    ,[2]    ,[]     ,[2,5]  ,[5]    ,[6]    ,[5]    ,[5,6]  ,[5,6]  ],
     [[2]    ,[2]    ,[2,5]  ,[]     ,[5]    ,[5]    ,[7]    ,[5,7]  ,[7]    ],
-    [[3,2]  ,[2]    ,[3]    ,[4]    ,[]     ,[6]    ,[7]    ,[8]    ,[7,8]  ],
+    [[2,3]  ,[2]    ,[3]    ,[4]    ,[]     ,[6]    ,[7]    ,[8]    ,[7,8]  ],
     [[3]    ,[3,5]  ,[3]    ,[5]    ,[5]    ,[]     ,[5,8]  ,[8]    ,[8]    ],
-    [[5,4]  ,[4,5]  ,[5]    ,[4]    ,[5]    ,[5,8]  ,[]     ,[8]    ,[9]    ],
-    [[6,5]  ,[5]    ,[5,6]  ,[5,7]  ,[5]    ,[6]    ,[7]    ,[]     ,[9]    ],
-    [[8,7]  ,[7,8]  ,[7,8]  ,[7]    ,[7,8]  ,[8]    ,[7]    ,[8]    ,[]     ]
+    [[4,5]  ,[4,5]  ,[5]    ,[4]    ,[5]    ,[5,8]  ,[]     ,[8]    ,[9]    ],
+    [[5,6]  ,[5]    ,[5,6]  ,[5,7]  ,[5]    ,[6]    ,[7]    ,[]     ,[9]    ],
+    [[7,8]  ,[7,8]  ,[7,8]  ,[7]    ,[7,8]  ,[8]    ,[7]    ,[8]    ,[]     ]
 ]
 
 def routing_dist = [
@@ -133,8 +133,8 @@ for(int i = 0; i < node_count; i++){
 }
 
 
-def mac_name = "CSMA"
-def scenario_name = "equidistant_opposite_path"
+def mac_name = "SFAMA"
+def scenario_name = "equidistant_same_path"
 def date = new Date()
 def sdf = new SimpleDateFormat("HH-mm-ss")
 def time =  sdf.format(date)

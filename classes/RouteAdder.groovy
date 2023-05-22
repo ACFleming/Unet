@@ -52,7 +52,7 @@ class RouteAdder extends UnetAgent {
         
         add new OneShotBehavior({
             for(int to = 0; to < this.routes.size(); to++){
-                print "Routing from ${this.node.address} to ${addresses[to]} via ${this.routes[to]}\n"
+                // print "Routing from ${this.node.address} to ${addresses[to]} via ${this.routes[to]}\n"
                 for(int nextHop in this.routes[to]){
                     // print "Routing to ${addresses[to]} via ${nextHop} from ${this.node.address}\n"
                     // print " ${nextHop},"
@@ -64,6 +64,7 @@ class RouteAdder extends UnetAgent {
                 }
                 // print "\n"
             }
+            print "Routing for ${this.node.address} done\n"
         
         })
             

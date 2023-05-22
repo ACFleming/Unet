@@ -45,6 +45,7 @@ class TransportGenerator extends UnetAgent {
 
     @Override
     void startup() {
+        print "TG Startup\n"
         this.phy = agentForService Services.PHYSICAL
         this.mac = agentForService Services.MAC
         this.uwlink = agentForService Services.DATAGRAM
@@ -57,22 +58,28 @@ class TransportGenerator extends UnetAgent {
         // def node = agentForService Services.NODE_INFO
         
         float dataPktDuration = get(phy, Physical.DATA, PhysicalChannelParam.frameDuration)
-        println "Transmit Generator : dataPktDuration = ${dataPktDuration}"
+        println "Transport Generator : dataPktDuration = ${dataPktDuration}"
         float rate = load/dataPktDuration                 
 
-        add new WakerBehavior(100,{
-            print "ready for mac\n"
+        add new OneShotBehavior({
+            // print "ready for mac\n"
+            // router << new GetRouteReq(to:9)
+            def rsp = router.request(new GetRouteReq(to:9))
+            print "${rsp}\n"
             if(this.tx_flag == true){
-                add new PoissonBehavior((int)(1000/rate), {              
+                print "SENDER @ ${100/rate}\n"
+                add new PoissonBehavior((int)(100/rate), {              
                     // create Poisson arrivals at given rate
                     def target = rnditem(destNodes)
                     // target = destNodes[0]
-                    print "Sending to ${target}\n from ${this.node.address}"
+                    print "Sending to ${target} from ${this.node.address}\n"
                     mac << new ReservationReq(to: target, duration: dataPktDuration)
                 
 
 
                 })
+            }else{
+                print "NOT SENDER\n"
             }
         })
 
@@ -85,7 +92,7 @@ class TransportGenerator extends UnetAgent {
     @Override
     void processMessage(Message msg) {
         if (msg instanceof ReservationStatusNtf && msg.status == ReservationStatus.START) {
-            // print "GOT RESERVATION\n"
+            print "GOT RESERVATION\n"
             // phy << new DatagramReq(to: msg.to)
             router << new DatagramReq( to: msg.to, protocol: Protocol.DATA, data : data_msg.encode([ data : 25]))
             // counter = counter +1       
