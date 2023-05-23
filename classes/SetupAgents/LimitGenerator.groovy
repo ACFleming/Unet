@@ -1,3 +1,5 @@
+package SetupAgents
+
 import org.arl.fjage.shell.Services
 import org.arl.unet.Services
 import org.arl.unet.DatagramReq

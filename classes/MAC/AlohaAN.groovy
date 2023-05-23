@@ -4,6 +4,9 @@ This file is released under Simplified BSD License.
 Go to http://www.opensource.org/licenses/BSD-3-Clause for full license details.
 ******************************************************************************/
 
+package MAC
+
+
 import org.arl.fjage.*
 import org.arl.fjage.param.*
 import org.arl.unet.*
@@ -263,7 +266,7 @@ class AlohaAN extends UnetAgent {
                     phy << new ClearReq()
                     rxDisable()
                     phy << new TxFrameReq(to: Address.BROADCAST, type: Physical.CONTROL , data : ntfMsg.encode([ destinationNodeAddress : destination ]))
-                    println "SENT NTF"
+                    print "${node.address} sending ntf\n"
                     sendData(tSlot)                     
                 }               
             }
@@ -328,7 +331,7 @@ class AlohaAN extends UnetAgent {
                               to: tSlot.destination,
                               status: ReservationStatus.END)
                             send ntf1
-                            print "Node: ${node.getName()} sent a message\n"      
+                            print "Node: ${node.address} sent a message\n"      
                             // print "${dataMsgDuration}\n"                              // send START reservation notification
                             add new WakerBehavior(dataMsgDuration, 
                             

@@ -3,6 +3,8 @@ Copyright (c) 2016, Pritish Nahar
 This file is released under Simplified BSD License.
 Go to http://www.opensource.org/licenses/BSD-3-Clause for full license details.
 ******************************************************************************/
+package MAC
+
 import org.arl.fjage.*
 import org.arl.fjage.param.Parameter
 

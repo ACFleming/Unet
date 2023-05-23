@@ -1,8 +1,11 @@
 //! Simulation
 
 import org.arl.fjage.RealTimePlatform
+import Scenarios.OffsetScenario
 import org.arl.unet.sim.*
 import org.arl.unet.sim.channels.*
+import Scenarios.*
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // simulation settings
@@ -36,6 +39,8 @@ channel = [
 ///////////////////////////////////////////////////////////////////////////////
 // simulation details
 println trace
+
+BaseScenario b = new OffsetScenario()
 
 simulate {
   def n1 = node 'I', address: 21, location: [-30.m, 0.m,  -5.m], web: 8081, api: 1101, shell: true

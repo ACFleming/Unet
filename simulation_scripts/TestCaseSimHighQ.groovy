@@ -181,7 +181,7 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
             
             destNodes = address_list.minus(address_list[n])
             if(tx_flag[n] == true){
-                container.add 'load', new TransferGenerator(destNodes, loadPerNode) 
+                container.add 'load', new TransportGenerator(destNodes, loadPerNode) 
             }
             
         } // each

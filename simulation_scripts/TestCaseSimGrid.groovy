@@ -59,7 +59,7 @@ def node_count = 2
 
 def load_range = [0.1, 1.5, 0.1] 
 def T = 100.minutes                       // simulation horizon
-// trace.warmup =  0.minutes             // collect statistics after a while
+trace.warmup =  0.minutes             // collect statistics after a while
 
 locations = [
     [-1.km,  1.km, -10.m],

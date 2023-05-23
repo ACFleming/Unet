@@ -1,3 +1,5 @@
+package SetupAgents
+
 import org.arl.fjage.shell.Services
 import org.arl.unet.Services
 import org.arl.unet.DatagramReq
@@ -49,24 +51,26 @@ class RouteAdder extends UnetAgent {
         this.router = agentForService Services.ROUTING
         this.rdp = agentForService Services.ROUTE_MAINTENANCE
         this.node = agentForService(Services.NODE_INFO)  
-        
-        add new OneShotBehavior({
-            for(int to = 0; to < this.routes.size(); to++){
-                // print "Routing from ${this.node.address} to ${addresses[to]} via ${this.routes[to]}\n"
-                for(int nextHop in this.routes[to]){
-                    // print "Routing to ${addresses[to]} via ${nextHop} from ${this.node.address}\n"
-                    // print " ${nextHop},"
-                    def r = EditRouteReq.newRoute()
-                    r.to = addresses[to]
-                    r.nextHop = nextHop
-                    r.hops = this.dists[to]
-                    this.router << r
+        if(this.routes != null){
+            add new OneShotBehavior({
+                for(int to = 0; to < this.routes.size(); to++){
+                    // print "Routing from ${this.node.address} to ${addresses[to]} via ${this.routes[to]}\n"
+                    for(int nextHop in this.routes[to]){
+                        // print "Routing to ${addresses[to]} via ${nextHop} from ${this.node.address}\n"
+                        // print " ${nextHop},"
+                        def r = EditRouteReq.newRoute()
+                        r.to = addresses[to]
+                        r.nextHop = nextHop
+                        r.hops = this.dists[to]
+                        this.router << r
+                    }
+                    // print "\n"
                 }
-                // print "\n"
-            }
-            print "Routing for ${this.node.address} done\n"
-        
-        })
+                print "Routing for ${this.node.address} done\n"
+            
+            })
+        }
+
             
 
 

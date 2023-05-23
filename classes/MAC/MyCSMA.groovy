@@ -1,3 +1,5 @@
+package MAC
+
 import org.arl.fjage.Message
 import org.arl.unet.mac.CSMA
 import org.arl.unet.*

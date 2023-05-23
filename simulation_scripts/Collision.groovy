@@ -17,6 +17,7 @@ modem.model =  org.arl.unet.sim.HalfDuplexModem
 // modem.janus = [true, true, true]
 
 
+def x = 8
 
 channel.model = org.arl.unet.sim.channels.ProtocolChannelModel
 
@@ -30,8 +31,10 @@ channel.pDecoding = 1 // pc
 ///////////////////////////////////////////////////////////////////////////////
 // simulation details
 
+run 'scripts/var.groovy'
+
 simulate {
-    
+    print "${x}"
     def n1 = node 'N', location: [ 0.km,  1.km, -20.m], address: 11, web: 8081, api: 1101, stack: "$home/etc/setup", shell: true
     def n2 = node 'E', location: [ 1.km,  0.km, -20.m], address: 12, web: 8082, api: 1102, stack: "$home/etc/setup"
     def n3 = node 'S', location: [ 0.km, -1.km, -20.m], address: 13, web: 8083, api: 1103, stack: "$home/etc/setup" 
