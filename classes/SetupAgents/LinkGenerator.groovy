@@ -1,13 +1,15 @@
 package SetupAgents
 import org.arl.fjage.shell.Services
 import org.arl.unet.Services
+import SetupAgents.LoadGenerator
+import org.arl.unet.UnetAgent
 
 import org.arl.fjage.*
 import org.arl.unet.*
 import org.arl.unet.phy.*
 import org.arl.unet.mac.*
 
-class LoadGenerator extends UnetAgent {
+class LinkGenerator extends UnetAgent {
 
     private List<Integer> dest_nodes                     // list of possible destination nodes
     private float load                                  // normalized load to generate
@@ -15,30 +17,18 @@ class LoadGenerator extends UnetAgent {
     private AgentID mac
     private AgentID phy
     private AgentID node
+    private AgentID uwlink
     
     def data_msg = PDU.withFormat
     {
         uint32('data')
     }
 
-    LoadGenerator(List<Integer> dest_nodes, float load, boolean tx_flag) {
-        this.dest_nodes = dest_nodes                        
-        this.load = load
-        this.tx_flag = tx_flag
-        print "TX: ${tx_flag}\n"                                 
-    }
-
-    void setDestNodes(List<Integer> d){
-        this.dest_nodes = d
-    }
-
-    void setLoad(float l){
+    LinkGenerator(List<Integer> dn, float l, boolean tx) {
+        this.dest_nodes = dn                        
         this.load = l
-    }
-
-
-    void setTxFlag(boolean tx){
         this.tx_flag = tx
+        print "TX: ${tx_flag}\n"               
     }
 
     @Override
@@ -46,20 +36,23 @@ class LoadGenerator extends UnetAgent {
         phy = agentForService Services.PHYSICAL
         mac = agentForService Services.MAC
         node = agentForService Services.NODE_INFO
+        uwlink = agentForService Services.DATAGRAM
         
         float dataPktDuration = get(phy, Physical.DATA, PhysicalChannelParam.frameDuration)
-        println "Load Generator : dataPktDuration = ${dataPktDuration}"
+        println "Link Generator : dataPktDuration = ${dataPktDuration}"
         float rate = load/dataPktDuration                 
         // compute average packet arrival rate
-        if(this.tx_flag){
+        if(this.tx_flag == true){
+            print "SENDER\n"
             add new PoissonBehavior((int)(1000/rate), {              
                 // create Poisson arrivals at given rate
                 // print "${node.address} ${dest_nodes}\n"
                 def target = rnditem(dest_nodes)
                 // target = dest_nodes[0]
-                // print "Sending to ${target}\n"
-                mac << new ReservationReq(to: target, duration: dataPktDuration)
+                uwlink << new DatagramReq( to: target, protocol: Protocol.DATA, data : data_msg.encode([ data : 25]))
             })
+        }else{
+            // print "NOT SENDER\"
         }
 
         
@@ -69,11 +62,12 @@ class LoadGenerator extends UnetAgent {
 
     @Override
     void processMessage(Message msg) {
-        if (msg instanceof ReservationStatusNtf && msg.status == ReservationStatus.START) {
-            phy << new ClearReq()                                   // stop any ongoing transmission or reception
-            phy << new TxFrameReq(to: msg.to, type: Physical.DATA , data : data_msg.encode([ data : 25]), protocol : Protocol.USER )             
-
+        if(msg == null){
+            print "${msg}\n"
         }
+        
+
     }
+
 
 }

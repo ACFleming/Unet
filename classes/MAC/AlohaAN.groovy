@@ -118,7 +118,7 @@ class AlohaAN extends UnetAgent {
     {
         phy = agentForService(Services.PHYSICAL)
         subscribe phy                                                  
-        initilialisationPhase()
+        initilialisationPhase()     
         node = agentForService(Services.NODE_INFO)  
         myAddr = node.Address       
         nodePosition = nodeList.indexOf(myAddr)
@@ -126,18 +126,20 @@ class AlohaAN extends UnetAgent {
     }
 
     public void initParams(List address_list, List<List> node_locations, channel, modem){
-        // print "INIT"
+        // print "ALoha Init\n"
+        
         this.nodeList = address_list
         assert address_list != null
-        this.nodeCount = address_list.size()
+        this.nodeCount = node_locations.size()
         this.dataMsgDuration = (int)(8000*modem.frameLength[1]/modem.dataRate[1] + 0.5)
         this.controlMsgDuration =  (int)(8000*modem.frameLength[0]/modem.dataRate[0] + 0.5)
-
+        
         
         
         this.maxDelay = new ArrayList<Integer>()
         this.schedule  = new ArrayList<ArrayList<AlohaAN.ScheduleSlot>>() 
         this.transmissionSlotsList = new ArrayList<AlohaAN.TransmissionSlot>()
+        // print "HERE\n"
 
         
 
@@ -146,13 +148,7 @@ class AlohaAN extends UnetAgent {
             def row = new ArrayList<Integer>()
 
             for(int n2 = 0; n2 < this.nodeCount; n2++){
-                // print node_locations[n1][0]
-                // print node_locations[n2][1]
-                // print "dist"
                 def dist = this.dist(node_locations[n1], node_locations[n2])
-                // def dist = Math.sqrt()
-                // print dist
-                // print 'Delay\n'
                 def delay = (int) (dist * 1000) / channel.soundSpeed + 0.5
                 row.add(delay)
                 
@@ -162,6 +158,7 @@ class AlohaAN extends UnetAgent {
             this.propagationDelay.add(row)
         }
         // print this.propagationDelay
+        
 
         
         maxDelay.clear()
@@ -174,20 +171,13 @@ class AlohaAN extends UnetAgent {
             this.schedule.add(new ArrayList<AlohaAN.ScheduleSlot>())
             
         }
-        // println "NODE COUNT"
-        // println nodeCount
         for(int i = 0;i<this.nodeCount;i++){
-            // print schedule[i].size()
-            // print "\n"
+
             schedule[i].clear()
             
 
         }
 
-        // print schedule
-
-
-        // int index = -
         
         for(int i = 0; i<nodeCount; i++){
         
@@ -198,11 +188,7 @@ class AlohaAN extends UnetAgent {
 
         lagTime = maxDelay.max() + controlMsgDuration
 
-
-
-
-
-
+        print "Aloha Init complete\n"
 
 
     }

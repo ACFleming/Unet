@@ -56,7 +56,7 @@ channel.detectionRange = 5.km
 
 ///////////////////////////////////////////////////////////////////////////////
 // simulation settings
-def node_count = 20
+def nodeCount = 20
 
 def load_range = [0.1, 1.5, 0.1] 
 def T = 100.minutes                       // simulation horizon
@@ -90,7 +90,7 @@ def api_base = 1101
 def web_base = 8081
 def address_base = 1
 def pos = []
-for(int i = 0; i < node_count; i++){
+for(int i = 0; i < nodeCount; i++){
     if(i == 0){
         def theta = RandomUtils.nextFloat(0, 2*3.14159)
         def radius = RandomUtils.nextFloat(100,2000)
@@ -138,12 +138,12 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
         def node_list = []
 
         // setup 4 nodes identically
-        for(int n = 0; n < node_count; n++ ){
+        for(int n = 0; n < nodeCount; n++ ){
             // divide network load across nodes evenly
             // print "Nodes in test sim"
             // print nodes.size()
 
-            float loadPerNode = load/node_count    
+            float loadPerNode = load/nodeCount    
             
             def macAgent = new AlohaAN()
             switch(mac_name) {

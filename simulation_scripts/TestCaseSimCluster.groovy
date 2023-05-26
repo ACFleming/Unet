@@ -56,7 +56,7 @@ channel.detectionRange = 5.km
 
 ///////////////////////////////////////////////////////////////////////////////
 // simulation settings
-def node_count = 8
+def nodeCount = 8
 
 def load_range = [0.1, 1.5, 0.1] 
 def T = 100.minutes                       // simulation horizon
@@ -91,11 +91,11 @@ def tx_flag = []
 def api_base = 1101
 def web_base = 8081
 def address_base = 1
-println node_count/2
-for(int i = 0; i < node_count; i++){
+println nodeCount/2
+for(int i = 0; i < nodeCount; i++){
     def theta = RandomUtils.nextFloat(0, 2*3.14159)
     def radius = RandomUtils.nextFloat(0,500)
-    if(i < node_count/2){
+    if(i < nodeCount/2){
         pos = [locations[0][0]+radius*Math.cos(theta), locations[0][1]+radius*Math.sin(theta)]
         
     }else{
@@ -137,12 +137,12 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
         def node_list = []
 
         // setup 4 nodes identically
-        for(int n = 0; n < node_count; n++ ){
+        for(int n = 0; n < nodeCount; n++ ){
             // divide network load across nodes evenly
             // print "Nodes in test sim"
             // print nodes.size()
 
-            float loadPerNode = load/node_count    
+            float loadPerNode = load/nodeCount    
             
             def macAgent = new AlohaAN()
             switch(mac_name) {
@@ -179,12 +179,12 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
             }
             def destNodes = []
             // print address_list
-            if(n < node_count/2){
-                // println "${0..(node_count/2)-1}"
-                destNodes = address_list[0..<(node_count/2)-1]
+            if(n < nodeCount/2){
+                // println "${0..(nodeCount/2)-1}"
+                destNodes = address_list[0..<(nodeCount/2)-1]
             }else{
                 // println 'b'
-                destNodes = address_list[(node_count/2)..(node_count-1)]
+                destNodes = address_list[(nodeCount/2)..(nodeCount-1)]
             }
             destNodes = destNodes.minus(address_list[n])
             // println destNodes

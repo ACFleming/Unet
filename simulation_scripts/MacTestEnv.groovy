@@ -26,6 +26,9 @@ import org.arl.fjage.Agent.*
 import java.text.SimpleDateFormat
 import groovy.lang.MissingMethodException
 import org.apache.commons.lang3.time.DateUtils
+import Scenarios.OffsetScenario
+import Scenarios.HighQuantityScenario
+import Scenarios.BaseScenario
 import Scenarios.*
 import MAC.*
 import SetupAgents.*
@@ -40,28 +43,17 @@ Simulation
 ///////////////////////////////////////////////////////////////////////////////
 // modem and channel model to use
 
-modem.dataRate = [2400, 2400].bps
-modem.frameLength = [4, 300].bytes
-modem.preambleDuration = 0
-modem.txDelay = 0
-modem.clockOffset = 0.s
-modem.headerLength = 0.s
 
-channel.model = ProtocolChannelModel
-channel.soundSpeed = 1500.mps
-channel.communicationRange = 1.5.km
-channel.interferenceRange = 1.5.km
-channel.detectionRange = 1.5.km
 
 // platform = org.arl.fjage.RealTimePlatform
  
 
 
 
-BaseScenario b = new BaseScenario()
-def mac_name = "CSMA"
+def b = new BaseScenario()
+def mac_name = "SFAMA"
 def scenario_name = b.getFileString()
-def file_name = "results/" + mac_name  + "_"+ scenario_name
+def file_name = "results/" + mac_name  + "_"+ scenario_name +".csv"
 
  
 println "  {ld}  ,   {dC}  ,   {eC}  ,   {sL}  ,   {mD}  ,   {oL}  ,   {rx}  ,   {tp}  ,   {tx}  ,   {ls}"
@@ -76,23 +68,24 @@ out << "{load}, {dropCount}, {enqueCount}, {simLoad}, {meanDelay}, {offeredLoard
 
 // simulate at various arrival rates
 for (def load = b.load_range[0]; load <= b.load_range[1]; load += b.load_range[2]) {
-    // print address_list
-    simulate b.T, {
+    simulate b.getT(), {
 
         def node_list = []
 
         // setup 4 nodes identically
-        for(int n = 0; n < b.node_count; n++ ){
+        for(int n = 0; n < b.getNodeCount(); n++ ){
+            
 
-
-            float loadPerNode = load/b.node_count    
+            float loadPerNode = load/b.getNodeCount()
+    
             
-            def macAgent = b.macs[mac_name].newInstance()
-            // print "${macAgent.getClass()}"
-            macAgent.initParams(b.address_list,b.node_locations,b.channel, b.modem)
+            def macAgent = b.getMacType(mac_name).newInstance()
+            
+            macAgent.initParams(b.getAddressList(),b.getNodeLocations(),b.getChannel(), b.getModem())
             
             
-            node_list << node("Node${n+1}", address: b.address_list[n], location: b.node_locations[n] , web: b.web_list[n], api:b.api_list[n],  stack : { container -> 
+            
+            node_list << node("Node${n+1}", address: b.getAddressList()[n], location: b.getNodeLocations()[n] , web: b.getWebList()[n], api:b.getApiList()[n],  stack : { container -> 
             container.add 'arp',            new org.arl.unet.addr.AddressResolution()
             container.add 'ranging',        new org.arl.unet.localization.Ranging()
             container.add 'uwlink',         new org.arl.unet.link.ReliableLink()
@@ -102,12 +95,13 @@ for (def load = b.load_range[0]; load <= b.load_range[1]; load += b.load_range[2
             container.add 'mac',            macAgent 
             
             }) 
-
+            
+            // print "Loads and routes\n"
             def l = b.getGenerator(n, loadPerNode)
             container.add 'load', l
-            RouteAdder r = b.getAddder(n)
+            RouteAdder r = b.getAdder(n)
             container.add 'addRoutes', r
-                       
+            // print "${n} Node ${b.getAddressList()[n]} finished\n"           
             
         } // each
 

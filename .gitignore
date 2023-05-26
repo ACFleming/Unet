@@ -7,3 +7,4 @@ bin/*
 *.json
 logs/*
 *.log
+*.class

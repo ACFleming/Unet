@@ -16,6 +16,7 @@ import org.apache.commons.lang3.time.DateUtils
 import MAC.SlottedFama
 import MAC.MyCSMA
 import MAC.AlohaAN
+import SetupAgents.LoadGenerator
 // import SetupAgents.RouteAdder
 import SetupAgents.*
 // import SetupAgents.RouteAdder
@@ -25,75 +26,115 @@ import SetupAgents.*
 
 class BaseScenario{
 
-    public def T = 100.minutes  
-    public def load_range = [0.1, 1.0, 0.2] 
+    def T = 100.minutes  
+    def load_range = [0.2, 0.2, 0.2] 
 
-    public def modem = [
+    def modem = [
             model:              org.arl.unet.sim.HalfDuplexModem,
             dataRate:           [2400.bps, 2400.bps],
-            frameLength:        [16.bytes, 300.bytes],
-            powerLevel:         [0.dB, -10.dB],
+            frameLength:        [300.bytes, 300.bytes],
+            powerLevel:         [-10.dB, -10.dB],
             preambleDuration:   0,
             txDelay:            0,
             clockOffset:        0.s,
             headerLength:       0.s
             ]
-    public def channel = [
+    def channel = [
                     model:              org.arl.unet.sim.channels.ProtocolChannelModel,
                     soundSpeed:         1500.mps,
-                    communicationRange: 1500.m,
-                    interferenceRange:  1500.m,
-                    detectionRange:     2500.m,
+                    communicationRange: 3500.m,
+                    interferenceRange:  3500.m,
+                    detectionRange:     4000.m,
                     pDetection:         1,
                     pDecoding:          1
                 ]
-    public def api_base = 1101
-    public def web_base = 8081
-    public def address_base = 10
-    public def api_list = []
-    public def web_list = []
-    public def address_list = []
+    def api_base = 1101
+    def web_base = 8081
+    def address_base = 10
+    def api_list = []
+    def web_list = []
+    def address_list = []
 
 
 
-    public def macs = [:]
+    def macs = [:]
 
 
-    public def node_count
-    public def node_locations
-    public def transmitters = []
-    public def routing_steps = []
-    public def routing_dist = []
-    public def dest_nodes = []
+    def node_count = []
+    def node_locations = []
+    def transmitters = []
+    def routing_steps = []
+    def routing_dist = []
+    def dest_nodes = []
     
 
     BaseScenario(){
 
-        this.node_count = 9
+        this.node_count = 3
         this.node_locations = [
-                [-0.5.km,  0.5.km, -10.m],
-                [ 0.km,  0.5.km, -10.m],
-                [ 0.5.km,  0.5.km, -10.m],
-                [-0.5.km,  0.km, -10.m],
+                [-1.km,  1.km, -10.m],
+                [ 0.km,  1.km, -10.m],
+                [ 1.km,  1.km, -10.m],
+                [-1.km,  0.km, -10.m],
                 [ 0.km,  0.km, -10.m],
-                [ 0.5.km,  0.km, -10.m],
-                [-0.5.km, -0.5.km, -10.m],
-                [ 0.km, -0.5.km, -10.m],
-                [ 0.5.km, -0.5.km, -10.m],
+                [ 1.km,  0.km, -10.m],
+                [-1.km, -1.km, -10.m],
+                [ 0.km, -1.km, -10.m],
+                [ 1.km, -1.km, -10.m],
             ]
-        this.transmitters = [
-                true,
-                true,
-                true,
-                true,
-                true,
-                true,
-                true,
-                true,
-                true
-                ]
 
 
+        this.transmittersSetAll()
+
+        this.generateAddrLists()
+
+        this.destNodesSetAll()
+
+        this.macs['CSMA'] = MyCSMA
+        this.macs["SFAMA"] = SlottedFama
+        this.macs["ALOHA"] = AlohaAN
+
+        // for(int i = 0; i < this.getNodeCount(); i++){
+        //     this.transmitters[i] = false
+        // }
+
+        // for(int i = 0; i < this.getNodeCount(); i++){
+        //     this.dest_nodes[i] = [this.address_list[1]]
+        // }
+
+
+        print "Object detais: ${this.dump()}\n"
+
+    }
+
+    def getGenerator(int node_number, float load){
+        print "Transmitter status for ${this.address_list[node_number]}: ${this.transmitters[node_number]}\n"
+        def l = new LoadGenerator(this.dest_nodes[node_number], load, this.transmitters[node_number])
+        print "DONE\n"
+        return l
+    }
+
+    RouteAdder getAdder(int node_number){
+        def r = new RouteAdder(this.routing_steps[node_number], this.address_list, this.routing_dist[node_number])
+        return r
+    }
+
+
+    String getFileString(){
+        return "BaseGridScenario"
+    }
+
+    void transmittersSetAll(){
+        this.transmitters.clear()
+        for(def i = 0; i < this.node_count; i++){
+            this.transmitters.add(true)
+        }
+    }
+
+    void generateAddrLists(){
+        this.api_list.clear()
+        this.web_list.clear()
+        this.address_list.clear()
         for(def i = 0; i < this.node_count; i++){
             
             api_list.add(api_base+i)
@@ -101,6 +142,10 @@ class BaseScenario{
             address_list.add(address_base+i)
 
         }
+    }
+
+    void destNodesSetAll(){
+        this.dest_nodes.clear()
         for(def i = 0; i < this.node_count; i++){
             def inner = []
             for(def j = 0; j < this.node_count; j++){
@@ -110,25 +155,140 @@ class BaseScenario{
             }
             this.dest_nodes.add(inner)
         }
-
-        this.macs['CSMA'] = MyCSMA
-        this.macs["SFAMA"] = SlottedFama
-        this.macs["ALOHA"] = AlohaAN
-
-    }
-
-    LoadGenerator getGenerator(int node_number, float load){
-        def l = new LoadGenerator(this.dest_nodes[node_number], load)
-        return l
-    }
-
-    RouteAdder getAddder(int node_number){
-        def r = new RouteAdder(this.routing_steps[node_number], this.address_list, this.routing_dist[node_number])
-        return r
     }
 
 
-    String getFileString(){
-        return "BaseGridScenario"
+    public def getT() {
+        return this.T;
     }
+
+    public void setT(def T) {
+        this.T = T;
+    }
+
+    public def getLoadRange() {
+        return this.load_range;
+    }
+
+    public void setLoadRange(def load_range) {
+        this.load_range = load_range;
+    }
+
+    public def getModem() {
+        return this.modem;
+    }
+
+    public void setModem(def modem) {
+        this.modem = modem;
+    }
+
+    public def getChannel() {
+        return this.channel;
+    }
+
+    public void setChannel(def channel) {
+        this.channel = channel;
+    }
+
+    public def getApiBase() {
+        return this.api_base;
+    }
+
+    public void setApiBase(def api_base) {
+        this.api_base = api_base;
+    }
+
+    public def getWebBase() {
+        return this.web_base;
+    }
+
+    public void setWebBase(def web_base) {
+        this.web_base = web_base;
+    }
+
+    public def getAddressBase() {
+        return this.address_base;
+    }
+
+    public void setAddressBase(def address_base) {
+        this.address_base = address_base;
+    }
+
+    public def getApiList() {
+        return this.api_list;
+    }
+
+    public def getWebList() {
+        return this.web_list;
+    }
+
+    public def getAddressList() {
+        return this.address_list;
+    }
+
+    public getMacType(def str){
+        return this.macs[str]
+    }
+
+    public def getMacs() {
+        return this.macs;
+    }
+
+    public void setMacs(def macs) {
+        this.macs = macs;
+    }
+
+    public def getNodeCount() {
+        return this.node_count;
+    }
+
+    public void setNodeCount(def node_count) {
+        this.node_count = node_count;
+    }
+
+    public def getNodeLocations() {
+        return this.node_locations;
+    }
+
+    public def getNodeLocationRow(def i) {
+        return this.node_locations[i];
+    }
+
+    public void setNodeLocationRow(def i, def row) {
+        this.node_locations[i] = row;
+    }
+
+
+    public def getTransmitters() {
+        return this.transmitters;
+    }
+
+    public void setTransmitters(def transmitters) {
+        this.transmitters = transmitters;
+    }
+
+    public def getRoutingSteps() {
+        return this.routing_steps;
+    }
+
+    public void setRoutingSteps(def routing_steps) {
+        this.routing_steps = routing_steps;
+    }
+
+    public def getRoutingDist() {
+        return this.routing_dist;
+    }
+
+    public void setRoutingDist(def routing_dist) {
+        this.routing_dist = routing_dist;
+    }
+
+    public def getDestNodes() {
+        return this.dest_nodes;
+    }
+
+    public void setDestNodes(def dest_nodes) {
+        this.dest_nodes = dest_nodes;
+    }
+    
 }

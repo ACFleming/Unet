@@ -20,34 +20,39 @@ import MAC.AlohaAN
 import SetupAgents.*
 // import SetupAgents.RouteAdder
 import org.apache.commons.lang3.RandomUtils
+import Scenarios.BaseScenario
 
 
 
-class OffsetScenario extends BaseScenario{
+class HighQuantityScenario extends BaseScenario{
 
   
 
-    OffsetScenario(){
+    HighQuantityScenario(){
         super()
         
+        
+        this.setNodeCount(20)
         for(def i = 0; i < this.getNodeCount(); i++){
-            
-            def theta = RandomUtils.nextFloat(0, 2*3.14159)
-            def radius = RandomUtils.nextFloat(0,300)
-            def curr_loc = this.getNodeLocationRow(i)
-            // print "THERE\n"
 
-            def x = curr_loc[0]+radius*Math.cos(theta)
-            def y = curr_loc[1]+radius*Math.sin(theta)
-            def z = curr_loc[2]
-            this.setNodeLocationRow(i, curr_loc)
+            def theta = RandomUtils.nextFloat(0, 2*3.14159) 
+            def radius = RandomUtils.nextFloat(100,1000)                  
+            def x = radius*Math.cos(theta)
+            def y = radius*Math.sin(theta)
+            
+            def z = this.getNodeLocationRow(0)[2]
+            this.setNodeLocationRow(i, [x,y,z])
 
         }
         
+        this.transmittersSetAll()
+        this.generateAddrLists()
+        this.destNodesSetAll()
+        print "Object detais: ${this.dump()}\n"
 
     }
 
     String getFileString(){
-        return "OffsetGridScenario"
+        return "HighQuantityScenario"
     }
 }

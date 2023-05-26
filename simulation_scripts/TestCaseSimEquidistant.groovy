@@ -56,7 +56,7 @@ channel.detectionRange = 1.5.km
 
 ///////////////////////////////////////////////////////////////////////////////
 // simulation settings
-def node_count = 9
+def nodeCount = 9
 
 def load_range = [0.1, 1.5, 0.1] 
 def T = 100.minutes                       // simulation horizon
@@ -124,7 +124,7 @@ def tx_flag = []
 def api_base = 1101
 def web_base = 8081
 def address_base = 1
-for(int i = 0; i < node_count; i++){
+for(int i = 0; i < nodeCount; i++){
     node_locations.add(locations[i])
     api_list.add(api_base+i)
     web_list.add(web_base+i)
@@ -158,12 +158,12 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
         def node_list = []
 
         // setup 4 nodes identically
-        for(int n = 0; n < node_count; n++ ){
+        for(int n = 0; n < nodeCount; n++ ){
             // divide network load across nodes evenly
             // print "Nodes in test sim"
             // print nodes.size()
 
-            float loadPerNode = load/node_count    
+            float loadPerNode = load/nodeCount    
             
             def macAgent = new AlohaAN()
             def routeAdder = new RouteAdder(routing_steps[n], address_list, routing_dist[n])

@@ -14,9 +14,9 @@ import org.arl.unet.*
 import org.arl.unet.phy.*
 import org.arl.unet.mac.*
 import org.arl.unet.net.*
-class TransportGenerator extends LoadGenerator {
+class TransportGenerator extends UnetAgent {
     
-    private List<Integer> destNodes                     // list of possible destination nodes
+    private List<Integer> dest_nodes                     // list of possible destination nodes
     private float load                                  // normalized load to generate
     private AgentID mac
     private AgentID phy
@@ -27,9 +27,11 @@ class TransportGenerator extends LoadGenerator {
     private boolean tx_flag
     def counter = 0
 
-    TransportGenerator(List<Integer> destNodes, float load) {
-        this.destNodes = destNodes                        
+    TransportGenerator(List<Integer> dest_nodes, float load, boolean tx_flag) {
+        this.dest_nodes = dest_nodes                        
         this.load = load
+        this.tx_flag = tx_flag
+        print "TX: ${tx_flag}\n" 
     }
 
 
@@ -55,7 +57,7 @@ class TransportGenerator extends LoadGenerator {
             print "SENDER @ ${100/rate}\n"
             add new PoissonBehavior((int)(100/rate), {              
                 // create Poisson arrivals at given rate
-                def target = rnditem(destNodes)
+                def target = rnditem(dest_nodes)
                 router << new DatagramReq( to: target, protocol: Protocol.DATA, data : data_msg.encode([ data : 25]))
             })
         })
