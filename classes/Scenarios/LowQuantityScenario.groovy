@@ -22,15 +22,15 @@ import Scenarios.BaseScenario
 
 
 
-class HighQuantityScenario extends BaseScenario{
+class LowQuantityScenario extends BaseScenario{
 
   
 
-    HighQuantityScenario(){
+    LowQuantityScenario(){
         super()
         
         
-        this.setNodeCount(20)
+        this.setNodeCount(3)
         for(def i = 0; i < this.getNodeCount(); i++){
 
             def theta = RandomUtils.nextFloat(0, 2*3.14159) 
@@ -51,6 +51,6 @@ class HighQuantityScenario extends BaseScenario{
     }
 
     String getFileString(){
-        return "HighQuantityScenario"
+        return "LowQuantityScenario"
     }
 }

@@ -13,10 +13,8 @@ import org.arl.fjage.Agent.*
 import java.text.SimpleDateFormat
 import groovy.lang.MissingMethodException
 import org.apache.commons.lang3.time.DateUtils
-import MAC.SlottedFama
-import MAC.MyCSMA
-import MAC.AlohaAN
-import SetupAgents.LoadGenerator
+
+import MAC.*
 // import SetupAgents.RouteAdder
 import SetupAgents.*
 // import SetupAgents.RouteAdder
@@ -27,12 +25,12 @@ import SetupAgents.*
 class BaseScenario{
 
     def T = 100.minutes  
-    def load_range = [0.2, 0.2, 0.2] 
+    def load_range = [0.2, 1.0, 0.2] 
 
     def modem = [
             model:              org.arl.unet.sim.HalfDuplexModem,
             dataRate:           [2400.bps, 2400.bps],
-            frameLength:        [300.bytes, 300.bytes],
+            frameLength:        [32.bytes, 256.bytes],
             powerLevel:         [-10.dB, -10.dB],
             preambleDuration:   0,
             txDelay:            0,
@@ -70,7 +68,7 @@ class BaseScenario{
 
     BaseScenario(){
 
-        this.node_count = 3
+        this.node_count = 9
         this.node_locations = [
                 [-1.km,  1.km, -10.m],
                 [ 0.km,  1.km, -10.m],
@@ -91,8 +89,8 @@ class BaseScenario{
         this.destNodesSetAll()
 
         this.macs['CSMA'] = MyCSMA
-        this.macs["SFAMA"] = SlottedFama
-        this.macs["ALOHA"] = AlohaAN
+        this.macs["SFAMA"] = MySlottedFama
+        this.macs["ALOHA"] = MyAlohaAN
 
         // for(int i = 0; i < this.getNodeCount(); i++){
         //     this.transmitters[i] = false
@@ -255,7 +253,9 @@ class BaseScenario{
     }
 
     public void setNodeLocationRow(def i, def row) {
+        print "${row}\n"
         this.node_locations[i] = row;
+        print "${this.node_locations[i]}\n"
     }
 
 

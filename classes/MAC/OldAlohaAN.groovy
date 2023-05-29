@@ -3,10 +3,7 @@ Copyright (c) 2016, Pritish Nahar
 This file is released under Simplified BSD License.
 Go to http://www.opensource.org/licenses/BSD-3-Clause for full license details.
 ******************************************************************************/
-
 package MAC
-
-
 import org.arl.fjage.*
 import org.arl.fjage.param.*
 import org.arl.unet.*
@@ -22,13 +19,8 @@ import org.arl.fjage.Performative
 import java.lang.*
 import java.util.Random 
 import org.arl.unet.nodeinfo.NodeInfo
-// import org.apache.commons.math3.util.MathUtils
-import org.apache.commons.math3.ml.distance.DistanceMeasure
-// import org.eclipse.jetty.util.MathUtils
-import org.codehaus.groovy.vmplugin.v8.Java8
 import java.util.*
 import org.arl.unet.mac.*
-import org.arl.unet.utils.*
 
 
 /**
@@ -39,9 +31,9 @@ import org.arl.unet.utils.*
  * Collision Avoidance for Underwater Acoustic Networks, in Proceedings of
  * IEEE INFOCOM 2007.
  */
-class MyAlohaAN extends UnetAgent {
+class AlohaAN extends UnetAgent {
             
-    private ArrayList<Integer> nodeList
+    private List<Integer> nodeList
     private int myAddr
     private AgentID node,phy
 
@@ -65,8 +57,8 @@ class MyAlohaAN extends UnetAgent {
     private final static int DEFER_TRANSMISSIONS   = 3
 
     ArrayList<Integer> maxDelay = new ArrayList<Integer>()
-    ArrayList<ArrayList<MyAlohaAN.ScheduleSlot>> schedule  = new ArrayList<ArrayList<MyAlohaAN.ScheduleSlot>>() 
-    ArrayList<MyAlohaAN.TransmissionSlot> transmissionSlotsList = new ArrayList<MyAlohaAN.TransmissionSlot>()
+    ArrayList<ArrayList<AlohaAN.ScheduleSlot>> schedule  = new ArrayList<ArrayList<AlohaAN.ScheduleSlot>>() 
+    ArrayList<AlohaAN.TransmissionSlot> transmissionSlotsList = new ArrayList<AlohaAN.TransmissionSlot>()
 
     int lagTime                    = 0
     int scheduleSlotKey            = 1
@@ -82,23 +74,16 @@ class MyAlohaAN extends UnetAgent {
 
     private class TransmissionSlot
     {
-        private int destination
-        private int backoffCount
-        private int key
-        private long startTimeNtf
-        private long endTimeNtf
-        private long startTimeData
-        private long endTimeData
+        private int destination,backoffCount,key
+        private long startTimeNtf,endTimeNtf,startTimeData,endTimeData
         private AgentID sender
         private String msgID        
     }
 
     private class ScheduleSlot
     {
-        private long busyTimeStart
-        private long busyTimeEnd
-        private int key
-        private int status 
+        private long busyTimeStart,busyTimeEnd
+        private int key,status 
     }   
 
     def ntfMsg = PDU.withFormat
@@ -106,90 +91,14 @@ class MyAlohaAN extends UnetAgent {
         uint8('destinationNodeAddress')
     }
 
-    private double dist(n1, n2){
-        def sqr_sum = 0
-        for(int i = 0; i < n1.size(); i++){
-            sqr_sum +=(n1[i]-n2[i])*(n1[i]-n2[i])
-        }
-        return Math.sqrt(sqr_sum)
-    }
-
     public void startup() 
     {
         phy = agentForService(Services.PHYSICAL)
         subscribe phy                                                  
-        initilialisationPhase()     
+
         node = agentForService(Services.NODE_INFO)  
         myAddr = node.Address       
         nodePosition = nodeList.indexOf(myAddr)
-
-    }
-
-    public void initParams(List address_list, List<List> node_locations, channel, modem){
-        // print "ALoha Init\n"
-        
-        this.nodeList = address_list
-        // assert address_list != null
-        this.nodeCount = node_locations.size()
-        this.dataMsgDuration = (int)(8000*modem.frameLength[1]/modem.dataRate[1] + 0.5)
-        this.controlMsgDuration =  (int)(8000*modem.frameLength[0]/modem.dataRate[0] + 0.5)
-        
-        
-        
-        this.maxDelay = new ArrayList<Integer>()
-        this.schedule  = new ArrayList<ArrayList<MyAlohaAN.ScheduleSlot>>() 
-        this.transmissionSlotsList = new ArrayList<MyAlohaAN.TransmissionSlot>()
-        // print "HERE\n"
-
-        
-
-        for(int n1 = 0; n1 < this.nodeCount; n1++){
-            
-            def row = new ArrayList<Integer>()
-
-            for(int n2 = 0; n2 < this.nodeCount; n2++){
-                def dist = this.dist(node_locations[n1], node_locations[n2])
-                def delay = (int) (dist * 1000) / channel.soundSpeed + 0.5
-                row.add(delay)
-                
-                
-            }
-            
-            this.propagationDelay.add(row)
-        }
-        // print this.propagationDelay
-        
-
-        
-        maxDelay.clear()
-        transmissionSlotsList.clear()
-        schedule.clear()
-        nodePosition = nodeList.indexOf(myAddr)
-        
-
-        for(int i = 0; i < this.nodeCount; i++){
-            this.schedule.add(new ArrayList<MyAlohaAN.ScheduleSlot>())
-            
-        }
-        for(int i = 0;i<this.nodeCount;i++){
-
-            schedule[i].clear()
-            
-
-        }
-
-        
-        for(int i = 0; i<nodeCount; i++){
-        
-            maxDelay.add(propagationDelay[i].max())
-        }
-        
-
-
-        lagTime = maxDelay.max() + controlMsgDuration
-
-        print "Aloha Init complete\n"
-
 
     }
 
@@ -198,16 +107,83 @@ class MyAlohaAN extends UnetAgent {
         register Services.MAC
     }
 
+    private void setNodeList(List nodeList)
+    {
+        this.nodeList   = nodeList
 
+        nodeCount = nodeList.size()
+
+        initilialisationPhase()
+    }
 
     private void initilialisationPhase()
     {
+        maxDelay.clear()
+        transmissionSlotsList.clear()
+        nodePosition = nodeList.indexOf(myAddr)
 
+        int scheduleSize = schedule.size()
+
+        if(scheduleSize == null)
+        {
+            scheduleSize = 0
+        }
+        
+        if(scheduleSize > nodeCount)
+        {
+            for(int i = nodeCount; i<scheduleSize;i++)
+            {
+                schedule.remove(nodeCount)
+            }
+        }
+        else
+        {
+            for(int i = 0;i<nodeCount-scheduleSize;i++)
+            {
+                schedule.add(new ArrayList<AlohaAN.ScheduleSlot>())
+            }
+        }   
+
+        for(int i = 0;i<nodeCount;i++)
+        {
+            schedule[i].clear()
+
+        }
+
+
+        int index = -1
+        for(int i = 0; i<nodeCount; i++)
+        {
+            for(int j = 0; j<nodeCount; j++)
+            {
+                index += 1
+                if(j == 0)
+                {
+                    maxDelay.add(propagationDelay[index])
+                }
+                else
+                {
+                    if(propagationDelay[index] > maxDelay[i])
+                    {
+                        maxDelay[i] = propagationDelay[index]
+                    }
+                }   
+            } 
+        }
+
+        for(int i = 0;i < nodeCount; i++)
+        {
+            if(lagTime < maxDelay[i])
+            {
+                lagTime = maxDelay[i]
+            }
+        }
+
+        lagTime = lagTime + controlMsgDuration
     }
     
     private void sendNtf(ReservationReq msg)
     {
-        // print "Attempt to send\n"
 //for maintaining a list that stores node's ntf and data transmission times, along with other info
         int destination    = msg.to
         long startTimeNtf  = getCurrentTime()  
@@ -229,7 +205,7 @@ class MyAlohaAN extends UnetAgent {
 
 //check if modem is busy sending
         transmissionClashCheckFlag = transmissionClashCheck(NTF_PACKET)
-        // print "Transmission flag ${transmissionClashCheckFlag}\n"
+
         if (transmissionClashCheckFlag == 0) 
         {
 //check if transmission can result in collisions                
@@ -247,18 +223,14 @@ class MyAlohaAN extends UnetAgent {
                 }
                 else
                 {
-
-                    // print "\n\nYAY\n\n"
                     phy << new ClearReq()
                     rxDisable()
                     phy << new TxFrameReq(to: Address.BROADCAST, type: Physical.CONTROL , data : ntfMsg.encode([ destinationNodeAddress : destination ]))
-                    print "${node.address} sending ntf\n"
                     sendData(tSlot)                     
                 }               
             }
             else
             {
-                // print "Collision backoff\n"
                 //packet is backed off and sending slots updated as collision check returns negative
                 int bo = deferTransmissionsCollisionCheck(tSlot) 
                 tSlot.backoffCount = 1  
@@ -267,7 +239,6 @@ class MyAlohaAN extends UnetAgent {
         }           
         else 
         {
-            // print "Transmission backoff\n"
             //packet is backed off and transmission slots updated as modem is busy transmitting
             int bo = deferTransmissionsCollisionCheck(tSlot) 
             tSlot.backoffCount = 1  
@@ -301,7 +272,6 @@ class MyAlohaAN extends UnetAgent {
                         collisionCheckFlag = collisionCheck(DATA_PACKET,tSlot.destination)
                         if(collisionCheckFlag == 0)
                         {
-                            
                             //node is clear to send data, as checks have returned affirmative, so send a request to abort any ongoing reception and turn off receiver
                             phy << new ClearReq()
                             rxDisable()
@@ -316,11 +286,8 @@ class MyAlohaAN extends UnetAgent {
                               inReplyTo: tSlot.msgID,
                               to: tSlot.destination,
                               status: ReservationStatus.END)
-                            send ntf1
-                            print "Node: ${node.address} sent a message\n"      
-                            // print "${dataMsgDuration}\n"                              // send START reservation notification
+                            send ntf1                                    // send START reservation notification
                             add new WakerBehavior(dataMsgDuration, 
-                            
                             {    // wait for reservation duration
                               send ntf2   
                               clearTransmissionSlot(tSlot.key)  //after transmission is over, clear the entry in the list for the transmission
@@ -366,17 +333,15 @@ class MyAlohaAN extends UnetAgent {
 
     private void backoff(int bo, TransmissionSlot tSlot)
     {
-        // print "BACKING OFF\n"            
+                       
         add new BackoffBehavior(bo*dataMsgDuration, {
             if(tSlot != null)
             {
                 int currentTime = getCurrentTime()  
                 if(currentTime < tSlot.startTimeNtf)//this implies that the transmission was deferred due to a clash with another node implied by a ntf packet
                 {
-                    
-                    int bo1 = (int)(tSlot.startTimeNtf) 
-                    bo1 = bo1 - currentTime
-                    backoff(bo1, tSlot)
+                    int bo1 = ((Integer)(tSlot.startTimeNtf)) - currentTime
+                    backoff(bo1,tSlot)
                 }
                 else
                 {
@@ -391,7 +356,7 @@ class MyAlohaAN extends UnetAgent {
                         else
                         {
                             int bo1 = deferTransmissionsCollisionCheck(tSlot)
-                            backoff(bo1*dataMsgDuration, tSlot)
+                            backoff(bo1*dataMsgDuration,tSlot)
 
                         }               
                     }                   
@@ -430,7 +395,7 @@ class MyAlohaAN extends UnetAgent {
                             else
                             {
                                 int bo1 = deferTransmissionsCollisionCheck(tSlot)
-                                backoff(bo1*dataMsgDuration, tSlot)
+                                backoff(bo1*dataMsgDuration,tSlot)
 
                             }               
                         }                       
@@ -446,7 +411,7 @@ class MyAlohaAN extends UnetAgent {
         ParameterReq req = new ParameterReq(agentForService(Services.PHYSICAL))
         req.get(PhysicalParam.rxEnable)
         ParameterRsp rsp = (ParameterRsp) request(req, 1000)            
-        rsp.set(PhysicalParam.rxEnable,false, false) 
+        rsp.set(PhysicalParam.rxEnable,false,false) 
     }
 
     private void rxEnable()
@@ -455,7 +420,7 @@ class MyAlohaAN extends UnetAgent {
         ParameterReq req = new ParameterReq(agentForService(Services.PHYSICAL))
         req.get(PhysicalParam.rxEnable)
         ParameterRsp rsp = (ParameterRsp)request(req, 1000)         
-        rsp.set(PhysicalParam.rxEnable,true, false) 
+        rsp.set(PhysicalParam.rxEnable,true,false) 
     }
 
 
@@ -475,14 +440,13 @@ class MyAlohaAN extends UnetAgent {
 
         for(int i = 0; i<nodeCount; i++)    
         {   
-            // assert schedule[i] != null
             for(int j = 0; j<schedule[i].size(); j++)
             {
-                if(sendTimeStart + propagationDelay[nodePosition][i] > schedule[i][j].busyTimeEnd) 
+                if(sendTimeStart + propagationDelay[nodePosition*nodeCount+i] > schedule[i][j].busyTimeEnd) 
                 {
                     continue
                 }   
-                else if(sendTimeEnd + propagationDelay[nodePosition][i] < schedule[i][j].busyTimeStart)    
+                else if(sendTimeEnd + propagationDelay[nodePosition*nodeCount+i] < schedule[i][j].busyTimeStart)    
                 {
                     continue
                 }
@@ -519,7 +483,7 @@ class MyAlohaAN extends UnetAgent {
         receivingNtfCheckFlag = 0
         int sendTimeStart     = getCurrentTime()
         int sendTimeEnd       = sendTimeStart + controlMsgDuration
-        // assert schedule[0] != null && "t1"
+
         for(int j = 0; j<schedule[nodePosition].size(); j++)
         {
             if( sendTimeStart > schedule[nodePosition][j].busyTimeEnd )   
@@ -554,7 +518,6 @@ class MyAlohaAN extends UnetAgent {
         if(typeOfPacket == DATA_PACKET)
         {
             sendTimeEnd = sendTimeEnd + dataMsgDuration - controlMsgDuration
-            // assert transmissionSlotsList != null
             for(int i = 0; i<transmissionSlotsList.size(); i++ )
             {
                 if(sendTimeStart > transmissionSlotsList[i].startTimeData && sendTimeStart < transmissionSlotsList[i].endTimeData)
@@ -567,8 +530,7 @@ class MyAlohaAN extends UnetAgent {
         }
         else
         {
-            // assert transmissionSlotsList != null
-            for(int i = 0;i<transmissionSlotsList.size();i++)
+            for(int i = 0;i<transmissionSlotsList.size();i++ )
             {
                 if(sendTimeStart > transmissionSlotsList[i].startTimeNtf && sendTimeStart < transmissionSlotsList[i].endTimeNtf)
                 {
@@ -592,7 +554,6 @@ class MyAlohaAN extends UnetAgent {
     private void clearTransmissionSlot(int key)
     {
         //Clear entries pertaining to a particular packet request 
-        // assert transmissionSlotsList != null
         for(int i = 0;i<transmissionSlotsList.size();i++)
         {
             if(transmissionSlotsList[i].key == key)
@@ -636,7 +597,7 @@ class MyAlohaAN extends UnetAgent {
     private int scheduleCheck(long receiveTime,int sourcePosition,int destinationPosition)
     {
         //This function checks whether the data transmission corresponding to a received NTF packet will result in a conflict with the node's own scheduled tranmission.
-        long startTimeAtReceiver = receiveTime - propagationDelay[nodePosition][sourcePosition] + propagationDelay[sourcePosition][destinationPosition] + lagTime
+        long startTimeAtReceiver = receiveTime - propagationDelay[nodePosition*nodeCount+sourcePosition] + propagationDelay[sourcePosition*nodeCount+destinationPosition] + lagTime
         long endTimeAtReceiver  = startTimeAtReceiver + dataMsgDuration
 
         scheduleCheckFlag = STORE_SCHEDULE
@@ -647,7 +608,7 @@ class MyAlohaAN extends UnetAgent {
             {
                 if(( startTimeAtReceiver > transmissionSlotsList[i].startTimeData) && ( startTimeAtReceiver < transmissionSlotsList[i].endTimeData))  
                 {
-                    if(transmissionSlotsList[i].startTimeNtf < receiveTime - propagationDelay[nodePosition][sourcePosition])
+                    if(transmissionSlotsList[i].startTimeNtf < receiveTime - propagationDelay[nodePosition*nodeCount+sourcePosition])
                     {
                         scheduleCheckFlag = DISCARD_SCHEDULE
                         break
@@ -661,7 +622,7 @@ class MyAlohaAN extends UnetAgent {
                 }
                 else if(( endTimeAtReceiver > transmissionSlotsList[i].startTimeData ) && ( endTimeAtReceiver < transmissionSlotsList[i].endTimeData))
                 {
-                    if(transmissionSlotsList[i].startTimeNtf < receiveTime - propagationDelay[nodePosition][sourcePosition])
+                    if(transmissionSlotsList[i].startTimeNtf < receiveTime - propagationDelay[nodePosition*nodeCount+sourcePosition])
                     {
                         scheduleCheckFlag = DISCARD_SCHEDULE
                         break
@@ -696,9 +657,9 @@ class MyAlohaAN extends UnetAgent {
             {
                 if(transmissionSlotsList[i].destination == nodeList[destinationPosition])
                 {
-                    if(( startTimeAtReceiver > transmissionSlotsList[i].startTimeData + propagationDelay[nodePosition][destinationPosition] ) && ( startTimeAtReceiver < transmissionSlotsList[i].endTimeData + propagationDelay[nodePosition][destinationPosition] ))  
+                    if(( startTimeAtReceiver > transmissionSlotsList[i].startTimeData + propagationDelay[nodePosition*nodeCount+destinationPosition] ) && ( startTimeAtReceiver < transmissionSlotsList[i].endTimeData + propagationDelay[nodePosition*nodeCount+destinationPosition] ))  
                     {
-                        if(transmissionSlotsList[i].startTimeNtf < receiveTime - propagationDelay[nodePosition][destinationPosition])
+                        if(transmissionSlotsList[i].startTimeNtf < receiveTime - propagationDelay[nodePosition*nodeCount+sourcePosition])
                         {
                             scheduleCheckFlag = DISCARD_SCHEDULE
                             break
@@ -709,9 +670,9 @@ class MyAlohaAN extends UnetAgent {
                             deferTransmissionsScheduleCheck(transmissionSlotsList[i])
                         }
                     }
-                    else if(( endTimeAtReceiver > transmissionSlotsList[i].startTimeData + propagationDelay[nodePosition][destinationPosition] ) && ( endTimeAtReceiver < transmissionSlotsList[i].endTimeData + propagationDelay[nodePosition][destinationPosition] ))
+                    else if(( endTimeAtReceiver > transmissionSlotsList[i].startTimeData + propagationDelay[nodePosition*nodeCount+destinationPosition] ) && ( endTimeAtReceiver < transmissionSlotsList[i].endTimeData + propagationDelay[nodePosition*nodeCount+destinationPosition] ))
                     {
-                        if(transmissionSlotsList[i].startTimeNtf < receiveTime - propagationDelay[nodePosition][destinationPosition])
+                        if(transmissionSlotsList[i].startTimeNtf < receiveTime - propagationDelay[nodePosition*nodeCount+sourcePosition])
                         {
                             scheduleCheckFlag = DISCARD_SCHEDULE
                             break
@@ -737,7 +698,6 @@ class MyAlohaAN extends UnetAgent {
     
     //Clear the schedule entries corresponding to a received NTF packet.
         add new WakerBehavior(clearTime, {
-            // assert schedule[0] != null && "t2"
             for(int i = 0;i<schedule[0].size();i++)
             {
                 if(schedule[0][i].key == key)
@@ -758,7 +718,7 @@ class MyAlohaAN extends UnetAgent {
 //This function will set schedules(busy periods at all nodestination) due to the Data transmission corresponding to a received NTF packet.       
         for(int i = 0; i < nodeCount; i++)
         {
-            long startTime = receiveTime - propagationDelay[nodePosition][sourcePosition] + lagTime + propagationDelay[sourcePosition][i]
+            long startTime = receiveTime - propagationDelay[nodePosition*nodeCount+sourcePosition] + lagTime + propagationDelay[sourcePosition*nodeCount+i]
             long endTime   = startTime + dataMsgDuration
             
             ScheduleSlot sSlot = new ScheduleSlot()
@@ -797,7 +757,6 @@ class MyAlohaAN extends UnetAgent {
 
     public Message processRequest(Message msg) 
     {
-        
         switch (msg) {
           case ReservationReq:
             if (msg.duration <= 0) 
@@ -806,22 +765,11 @@ class MyAlohaAN extends UnetAgent {
             }
             else
             {
-                println "SENDING"
                 sendNtf(msg)                
             }
-            println msg
-            return new ReservationRsp(msg)
           case ReservationCancelReq:
-            println "CANCEL"
-            return new Message(msg, Performative.REFUSE)  
-            break;
           case ReservationAcceptReq:                                  // respond to other requests defined
-            println "ACCEPT"
-            return new Message(msg, Performative.REFUSE)  
-            break;
           case TxAckReq:                                              //  by the MAC service trivially with
-            println "TXACK" 
-            break;
             return new Message(msg, Performative.REFUSE)              //  a REFUSE performative
         }
         return null     
@@ -863,10 +811,8 @@ class MyAlohaAN extends UnetAgent {
                 int destinationPosition = nodeList.indexOf(pkt.destinationNodeAddress) 
                 
                 long receiveTime = msg.rxTime
-                receiveTime = receiveTime / 1000          
-                // print lagTime
-                // print propagationDelay           
-                int clearTime = lagTime - propagationDelay[nodePosition][sourcePosition] + maxDelay[sourcePosition] + dataMsgDuration - controlMsgDuration 
+                receiveTime = receiveTime / 1000                        
+                int clearTime = lagTime - propagationDelay[nodePosition*nodeCount+sourcePosition] + maxDelay[sourcePosition] + dataMsgDuration - controlMsgDuration 
                 //Clearing time for a particular entry in schedule is the time when all nodes will have finished receiving the DATA packet corresponding to the received NTF packet.            
                 scheduleCheck(receiveTime,sourcePosition,destinationPosition)
                 if(scheduleCheckFlag == STORE_SCHEDULE || scheduleCheckFlag == DEFER_TRANSMISSIONS)

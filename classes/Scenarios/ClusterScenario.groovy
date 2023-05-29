@@ -13,9 +13,7 @@ import org.arl.fjage.Agent.*
 import java.text.SimpleDateFormat
 import groovy.lang.MissingMethodException
 import org.apache.commons.lang3.time.DateUtils
-import MAC.SlottedFama
-import MAC.MyCSMA
-import MAC.AlohaAN
+import MAC.*
 // import SetupAgents.RouteAdder
 import SetupAgents.*
 // import SetupAgents.RouteAdder
@@ -54,20 +52,26 @@ class ClusterScenario extends BaseScenario{
         
         this.transmittersSetAll()
         this.generateAddrLists()
+        this.dest_nodes = []
         for(def n = 0; n < this.getNodeCount(); n++){
+            def d = []
+            
             if(n < nodeCount/2){
                 // println "${0..(nodeCount/2)-1}"
-                destNodes = address_list[0..<(nodeCount/2)-1]
+                d = address_list[0..<(nodeCount/2)-1]
             }else{
                 // println 'b'
-                destNodes = address_list[(nodeCount/2)..(nodeCount-1)]
+                d = address_list[(nodeCount/2)..(nodeCount-1)]
             }
+            // d.remove([address_list[n]])
+            d.remove(d.indexOf(address_list[n]))
+            dest_nodes.add(d)
         }
         print "Object detais: ${this.dump()}\n"
 
     }
 
     String getFileString(){
-        return "HighQuantityScenario"
+        return "ClusterScenario"
     }
 }

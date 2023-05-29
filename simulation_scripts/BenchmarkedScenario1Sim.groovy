@@ -1,12 +1,14 @@
-//! Simulation: Slotted FAMA
+//! Simulation: ALOHA-AN
 ///////////////////////////////////////////////////////////////////////////////
 /// 
 /// To run simulation:
-///   bin/unet Slotted FAMA/BenchmarkedScenario2Sim.groovy
+///   bin/unet ALOHA-AN/BenchmarkedScenario1Sim.groovy
 ///
 /// Output trace file: logs/trace.nam
 ///
 ///////////////////////////////////-////////////////////////////////////////////
+import MAC.*
+import SetupAgents.*
 import org.arl.fjage.*
 import org.arl.unet.*
 import org.arl.unet.phy.*
@@ -14,12 +16,10 @@ import org.arl.unet.sim.*
 import org.arl.unet.sim.channels.*
 import static org.arl.unet.Services.*
 import static org.arl.unet.phy.Physical.*
-import MAC.*
-import SetupAgents.*
-
+import org.arl.fjage.Agent.*
 
 println '''
-Slotted-FAMA simulation
+Aloha-AN simulation
 ===================
 '''
 
@@ -44,29 +44,13 @@ channel.detectionRange = 5.km
 ///////////////////////////////////////////////////////////////////////////////
 // simulation settings
 
-def nodes = 1..9                     // list of nodes
+def nodes = 1..6                     // list of nodes
 def loadRange = [0.1, 1.5, 0.1] 
-def T = 100.minutes                    // simulation horizon
-trace.warmup =  10.minutes            // collect statistics after a while
+def T = 100.minutes                       // simulation horizon
+trace.warmup =  10.minutes             // collect statistics after a while
 
 ///////////////////////////////////////////////////////////////////////////////
 // simulation details
-
-// generate random network geometry
-
-locations = [
-    [-1.km,  1.km, -10.m],
-    [ 0.km,  1.km, -10.m],
-    [ 1.km,  1.km, -10.m],
-    [-1.km,  0.km, -10.m],
-    [ 0.km,  0.km, -10.m],
-    [ 1.km,  0.km, -10.m],
-    [-1.km, -1.km, -10.m],
-    [ 0.km, -1.km, -10.m],
-    [ 1.km, -1.km, -10.m],
-]
-
-
 
 def addressList = new ArrayList<Integer>()
 for(int i = 0;i<nodes.size();i++)
@@ -74,18 +58,27 @@ for(int i = 0;i<nodes.size();i++)
   addressList.add((i+1))
 }
 
-double radius = 0.5.km
-double depth  = 5.0.m
+// Deploying nodes randomly within a radius
+
+def max_range = 2.5.km
 def nodeLocation = [:]
 nodes.each { myAddr ->
-  double theta = rnd(0,2*Math.PI)
-  nodeLocation[myAddr] = locations[myAddr-1]     
+  if(myAddr == 1)
+  {
+    nodeLocation[myAddr] = [0, 0, -10.m]    
+  }
+  else
+  {    
+    double theta = rnd(0,2*Math.PI)
+    double radius = rnd(2.0, max_range)
+    nodeLocation[myAddr] = [radius*Math.cos(theta), radius*Math.sin(theta), -10.m]     
+  }
 }
+ 
 
 // compute average distance between nodes for display
 def sum = 0
 def n = 0
-int maxPropagationDelay = 0
 def propagationDelay = new Integer[nodes.size()][nodes.size()]
 nodes.each { n1 ->
   nodes.each { n2 ->
@@ -109,34 +102,60 @@ out.text = ''
 // simulate at various arrival rates
 for (def load = loadRange[0]; load <= loadRange[1]; load += loadRange[2]) {
   simulate T, {
+
     def node_list = []
-    // setup nodes 
+
+    // setup 4 nodes identically
     nodes.each { myAddr ->
     
       float loadPerNode = load/nodes.size()     // divide network load across nodes evenly
-      def macAgent = new MySlottedFama()
-      node_list << node("${myAddr}", address: myAddr, location: nodeLocation[myAddr] , stack : { container -> 
-      container.add 'mac', macAgent        
-      }) 
-
-    for(int i = 0; i<nodes.size(); i++)
-    {
-      for(int j = 0; j<nodes.size(); j++)
+      def macAgent = new MAC.AlohaAN()
+      if(myAddr == 1)
       {
-        if(propagationDelay[i][j] > maxPropagationDelay)
+        node_list << node("${myAddr}", address: myAddr, location: nodeLocation[myAddr] , shell : true, stack : { container ->   
+          container.add 'mac', macAgent   
+        }) 
+
+      }
+      else
+      {
+        node_list << node("${myAddr}", address: myAddr, location: nodeLocation[myAddr] , stack : { container -> 
+          container.add 'mac', macAgent  
+        })
+      }    
+
+      for(int i = 0;i<addressList.size();i++)
+      {
+        for(int j = 0;j<addressList.size();j++)
         {
-          maxPropagationDelay = propagationDelay[i][j]
+          if(propagationDelay[i][j] != propagationDelay[j][i])
+          {
+            log.warning 'ERROR IN PROPAGATION_DELAY_PARAMETER'
+          }  
+          else
+          {
+            if(i == j && propagationDelay[i][i] != 0.0)
+            {
+              log.warning 'ERROR IN PROPAGATION_DELAY_PARAMETER'
+            }
+            else
+            {
+              macAgent.propagationDelay.add(propagationDelay[i][j])                                     
+            }            
+          }  
         }
       } 
-    }        
 
-      macAgent.timerCtsTimeoutOpMode = 2
-      macAgent.maxPropagationDelay = maxPropagationDelay
       macAgent.dataMsgDuration = (int)(8000*modem.frameLength[1]/modem.dataRate[1] + 0.5)
       macAgent.controlMsgDuration = (int)(8000*modem.frameLength[0]/modem.dataRate[0] + 0.5)
-    //   print nodes-myAddr
-      container.add 'load', new OldLoadGenerator(nodes-myAddr, loadPerNode)
-    } // each       
+      macAgent.nodeList  = addressList
+      if(myAddr != 1)
+      {
+        container.add 'load', new SetupAgents.OldLoadGenerator([1], loadPerNode)        
+      }
+    } // each
+
+
 
   }  // simulate
 
@@ -148,5 +167,5 @@ for (def load = loadRange[0]; load <= loadRange[1]; load += loadRange[2]) {
   // save to file
   out << "${trace.offeredLoad},${trace.throughput}\n"
 
-} 
+}
 

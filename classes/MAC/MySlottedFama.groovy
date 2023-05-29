@@ -4,6 +4,8 @@ This file is released under Simplified BSD License.
 Go to http://www.opensource.org/licenses/BSD-3-Clause for full license details.
 ******************************************************************************/
 package MAC
+import MAC.SlottedFama
+import org.arl.unet.UnetAgent
 
 import org.arl.fjage.*
 import org.arl.fjage.param.*
@@ -849,22 +851,22 @@ class MySlottedFama extends UnetAgent {
 
 
     public void initParams(address_list, List node_locations, channel, modem){
-        // print "INIT"
+        print "INIT"
         def nodes = []
         def nodeCount = address_list.size()
         
-        // print node_locations.size()
+        print node_locations.size()
         for(int i = 0; i<nodeCount; i++){
             nodes.add(i)
         }
         def sum = 0
         def n = 0
         def maxPropagationDelay = 0
-        // def propagationDelay = new ArrayList<ArrayList<Integer>>();
+        def propagationDelay = new ArrayList<ArrayList<Integer>>();
 
         for(int n1 = 0; n1 < nodeCount; n1++){
             
-            // def row = new ArrayList<Integer>()
+            def row = new ArrayList<Integer>()
 
             for(int n2 = 0; n2 < nodeCount; n2++){
                 def dist = this.dist(node_locations[n1], node_locations[n2])
@@ -872,20 +874,20 @@ class MySlottedFama extends UnetAgent {
                 if( delay > maxPropagationDelay){
                     maxPropagationDelay = delay
                 }
-                // row.add(delay)
+                row.add(delay)
                 
                 
             }
             
-            // propagationDelay.add(row)
+            propagationDelay.add(row)
         }
 
 
         this.timerCtsTimeoutOpMode = 2
         this.maxPropagationDelay = maxPropagationDelay
-        // print "Max prop"
-        // print this.maxPropagationDelay
-        // print "\n"
+        print "Max prop"
+        print this.maxPropagationDelay
+        print "\n"
 
         assert modem.dataRate[0] != 0
         assert modem.dataRate[1] != 0
@@ -893,7 +895,7 @@ class MySlottedFama extends UnetAgent {
         this.setControlMsgDuration((int)(8000*modem.frameLength[0]/modem.dataRate[0] + 0.5))
         this.slotLength = controlMsgDuration + maxPropagationDelay + 1
         print "Slot length: ${this.slotLength}\n"
-        // print "SL\n"
+        print "SL\n"
 
     }
 

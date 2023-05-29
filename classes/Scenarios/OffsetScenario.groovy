@@ -13,9 +13,7 @@ import org.arl.fjage.Agent.*
 import java.text.SimpleDateFormat
 import groovy.lang.MissingMethodException
 import org.apache.commons.lang3.time.DateUtils
-import MAC.SlottedFama
-import MAC.MyCSMA
-import MAC.AlohaAN
+import MAC.*
 // import SetupAgents.RouteAdder
 import SetupAgents.*
 // import SetupAgents.RouteAdder
@@ -33,16 +31,19 @@ class OffsetScenario extends BaseScenario{
         for(def i = 0; i < this.getNodeCount(); i++){
             
             def theta = RandomUtils.nextFloat(0, 2*3.14159)
-            def radius = RandomUtils.nextFloat(0,300)
+            def radius = RandomUtils.nextFloat(100,300)
             def curr_loc = this.getNodeLocationRow(i)
             // print "THERE\n"
 
             def x = curr_loc[0]+radius*Math.cos(theta)
             def y = curr_loc[1]+radius*Math.sin(theta)
             def z = curr_loc[2]
-            this.setNodeLocationRow(i, curr_loc)
+            print "x ${x} y ${y} z ${z}\n"
+            this.setNodeLocationRow(i, [x,y,z])
 
         }
+        print "Object detais: ${this.dump()}\n"
+        
         
 
     }
