@@ -98,23 +98,23 @@ class MySlottedFama extends UnetAgent {
             {
                 long currentTime  = GetCurrentTime()
 
-                // print "slotLength:"
-                // print slotLength
+                // println "slotLength:"
+                // println slotLength
                 int timeForNextSlot = slotLength - ( (currentTime - startTime) % slotLength )
-                // print "FAIL"
-                // print 'IDLE\n'
+                // println "FAIL"
+                // println 'IDLE'
                 after(timeForNextSlot.milliseconds)
                 {
-                    // print 'CHECKING if modem is busy\n'
+                    // println 'CHECKING if modem is busy'
                     modemBusy = ModemCheck()
                     if (!modemBusy){
                         if(!queue.isEmpty())
                         {
-                            // print "TX State\n"
+                            // println "TX State"
                             setNextState(State.TX_RTS)
                         }
                     }else{
-                        // print "RECEIVING\n"
+                        // println "RECEIVING"
                         setNextState(State.RECEIVING)
                     }
                 }
@@ -147,9 +147,9 @@ class MySlottedFama extends UnetAgent {
             {
                 Message msg = queue.peek()
                 // for(Message m: queue){
-                //     print "Message : ${m}\n"
+                //     println "Message : ${m}"
                 // }
-                print "${node.address} sending message: ${msg}\n"
+                println "${node.address} sending message: ${msg}"
                 def bytes = controlMsg.encode(type: RTS_PDU, duration: Math.ceil(msg.duration*1000))
                 phy << new ClearReq()
                 phy << new TxFrameReq(to: msg.to, type: Physical.CONTROL, protocol: PROTOCOL, data: bytes)
@@ -166,7 +166,7 @@ class MySlottedFama extends UnetAgent {
             //Wait for CTS till the end of the next slot.
             onEnter
             {
-                print "${node.address} Waiting for CTS\n"
+                println "${node.address} Waiting for CTS"
                 long currentTime  = GetCurrentTime()
                 waitTimeForCTS = slotLength - ( (currentTime - startTime) % slotLength ) + slotLength
                 after(waitTimeForCTS.milliseconds)
@@ -176,7 +176,7 @@ class MySlottedFama extends UnetAgent {
                     backoffStartTime = GetCurrentTime()
                     backoffEndTime = backoffStartTime + backoff
                     endTimeBackoffCtsTimeout = backoffEndTime
-                    print "${node.address} CTS TIMEOUT\n"
+                    println "${node.address} CTS TIMEOUT"
                     setNextState(State.BACKOFF_CTS_TIMEOUT)
                 }
             }
@@ -198,7 +198,7 @@ class MySlottedFama extends UnetAgent {
                 after(timeForNextSlot.milliseconds)
                 {
                     ReservationReq msg = queue.peek()
-                    print "${node.address} SENDING AND WAITING FOR ACK\n"
+                    println "${node.address} SENDING AND WAITING FOR ACK"
                     sendReservationStatusNtf(msg, ReservationStatus.START)
                     after(msg.duration)
                     {
@@ -222,7 +222,7 @@ class MySlottedFama extends UnetAgent {
                     {
                         sendReservationStatusNtf(queue.poll(), ReservationStatus.FAILURE)
                         retryCount = 0
-                        print "${node.address} ACK TIMEOUT\n"
+                        println "${node.address} ACK TIMEOUT"
                         setNextState(State.IDLE)
                     }
                     else
@@ -680,7 +680,7 @@ class MySlottedFama extends UnetAgent {
 
                 rxInfo = info
                 senderRTS.add(rxInfo.from)
-                print "${node.address} sending CTS to ${info.from} at next slot\n"
+                println "${node.address} sending CTS to ${info.from} at next slot"
                 long currentTime = GetCurrentTime()
                 long delayForTX_CTS = slotLength - ( (currentTime - startTime) % slotLength )
                 correspondent = info.from
@@ -848,11 +848,11 @@ class MySlottedFama extends UnetAgent {
 
 
     public void initParams(address_list, List node_locations, channel, modem){
-        print "INIT"
+        println "INIT"
         def nodes = []
         def nodeCount = address_list.size()
         
-        print node_locations.size()
+        println node_locations.size()
         for(int i = 0; i<nodeCount; i++){
             nodes.add(i)
         }
@@ -882,17 +882,14 @@ class MySlottedFama extends UnetAgent {
 
         this.timerCtsTimeoutOpMode = 2
         this.maxPropagationDelay = maxPropagationDelay
-        print "Max prop"
-        print this.maxPropagationDelay
-        print "\n"
+        println "Max prop ${this.maxPropagationDelay}"
 
         assert modem.dataRate[0] != 0
         assert modem.dataRate[1] != 0
         this.dataMsgDuration = (int)(8000*modem.frameLength[1]/modem.dataRate[1] + 0.5)
         this.setControlMsgDuration((int)(8000*modem.frameLength[0]/modem.dataRate[0] + 0.5))
         this.slotLength = controlMsgDuration + maxPropagationDelay + 1
-        print "Slot length: ${this.slotLength}\n"
-        print "SL\n"
+        println "Slot length: ${this.slotLength}"
 
     }
 
@@ -906,11 +903,11 @@ class MySlottedFama extends UnetAgent {
         subscribe(topic(phy, Physical.SNOOP))
 
         startTime = 0
-        print "${this.node.Address}\n"
+        println "${this.node.Address}"
         // addr = node.Address
         addr = node.Address
         // assert 7 == 6
-        // print "FSM"
+        // println "FSM"
         
         add(fsm)
 
@@ -951,7 +948,7 @@ class MySlottedFama extends UnetAgent {
     @Override
     Message processRequest(Message msg)
     {
-        // print "{Received request in SFAMA: ${msg}\n"
+        // println "{Received request in SFAMA: ${msg}"
         switch (msg)
         {
             case ReservationReq:
@@ -960,8 +957,8 @@ class MySlottedFama extends UnetAgent {
                 if (queue.size() >= MAX_QUEUE_LEN) return new Message(msg, Performative.REFUSE)
                 queue.add(msg)
                 fsm.trigger(Event.RESERVATION_REQ)
-                // print "GOT REQUEST\n"
-                print "${node.address} requesting to send to ${msg.to}\n"
+                // println "GOT REQUEST"
+                println "${node.address} requesting to send to ${msg.to}"
                 return new ReservationRsp(msg)
             case ReservationCancelReq:
             case ReservationAcceptReq:
@@ -974,11 +971,11 @@ class MySlottedFama extends UnetAgent {
     @Override
     void processMessage(Message msg)
     {
-        // print "${addr} received ${msg}\n"
+        // println "${addr} received ${msg}"
         if (msg instanceof RxFrameNtf)
         {
             def rx = controlMsg.decode(msg.data)
-            // print "RX:${rx}\n"
+            // println "RX:${rx}"
             long currentTime = GetCurrentTime()
             int timeForNextSlot = slotLength - ( (currentTime - startTime ) % slotLength )
             def info = [from: msg.from, to: msg.to, duration: slotLength]
@@ -992,13 +989,13 @@ class MySlottedFama extends UnetAgent {
                 {
                     if(info.to == addr)
                     {
-                        print "         ${node.address} RECEIVED RTS\n"
+                        println "         ${node.address} RECEIVED RTS"
                         info.duration = rx.duration
                         fsm.trigger(Event.RX_RTS, info)
                     }
                     else
                     {
-                    print "                     ${node.address} SNOOP RTS\n"
+                    println "                     ${node.address} SNOOP RTS"
                         info.duration = 2*slotLength
                         fsm.trigger(Event.SNOOP_RTS, info)
                     }
@@ -1008,12 +1005,12 @@ class MySlottedFama extends UnetAgent {
                     
                     if(info.to == addr)
                     {
-                        print "         ${node.address} RECEIVED CTS\n"
+                        println "         ${node.address} RECEIVED CTS"
                         fsm.trigger(Event.RX_CTS)
                     }
                     else
                     {
-                        print "                 ${node.address} SNOOP CTS\n"
+                        println "                 ${node.address} SNOOP CTS"
                         info.duration = timeForNextSlot+dataMsgDuration+maxPropagationDelay+2*slotLength - ((currentTime-startTime+timeForNextSlot+dataMsgDuration+maxPropagationDelay)%slotLength)
                         fsm.trigger(Event.SNOOP_CTS, info)
                     }
@@ -1022,12 +1019,12 @@ class MySlottedFama extends UnetAgent {
                 {
                     if(info.to == addr)
                     {
-                        print "         ${node.address} RECEIVED ACK\n"
+                        println "         ${node.address} RECEIVED ACK"
                         fsm.trigger(Event.RX_ACK, info)
                     }
                     else
                     {
-                        print "                 ${node.address} SNOOP ACK\n"
+                        println "                 ${node.address} SNOOP ACK"
                         fsm.trigger(Event.SNOOP_ACK, info)
                     }
                 }
@@ -1035,12 +1032,12 @@ class MySlottedFama extends UnetAgent {
                 {
                     if(info.to == addr)
                     {
-                        print "         ${node.address} RECEIVED NACK\n"
+                        println "         ${node.address} RECEIVED NACK"
                         fsm.trigger(Event.RX_NACK, info)
                     }
                     else
                     {
-                        print "                 ${node.address} SNOOP NACK\n"
+                        println "                 ${node.address} SNOOP NACK"
                         info.duration = timeForNextSlot+dataMsgDuration+maxPropagationDelay+2*slotLength - ((currentTime-startTime+timeForNextSlot+dataMsgDuration+maxPropagationDelay-startTime)%slotLength)
                         fsm.trigger(Event.SNOOP_NACK, info)
                     }
@@ -1061,7 +1058,7 @@ class MySlottedFama extends UnetAgent {
                     // info.duration = get(phy, Physical.CONTROL, PhysicalChannelParam.frameDuration)
                     info.duration = phy[2].frameDuration
                     info.from     = msg.getFrom()
-                    print "${node.address} RECEIVED DATA\n"
+                    println "${node.address} RECEIVED DATA"
                     fsm.trigger(Event.RX_DATA, info)
                 }
                 else
@@ -1090,7 +1087,7 @@ class MySlottedFama extends UnetAgent {
             }
             else
             {
-                println "BADFRAME\n"
+                println "BADFRAME"
                 fsm.trigger(Event.BADFRAME_NTF, backoff)
             }
         }

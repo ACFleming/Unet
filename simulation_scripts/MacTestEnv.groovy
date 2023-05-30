@@ -67,7 +67,7 @@ def cl = new CollinearScenario()
 def e = new EquidistantScenario()
 
 
-def scenario = b
+def scenario = l
 
 // def mac_name = "ALOHA"
 

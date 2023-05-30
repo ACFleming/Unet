@@ -25,7 +25,7 @@ import SetupAgents.*
 class BaseScenario{
 
     def T = 100.minutes  
-    def load_range = [0.2, 1.0, 0.2] 
+    def load_range = [0.1, 1.0, 0.1] 
 
     def modem = [
             model:              org.arl.unet.sim.HalfDuplexModem,
@@ -40,9 +40,9 @@ class BaseScenario{
     def channel = [
                     model:              org.arl.unet.sim.channels.ProtocolChannelModel,
                     soundSpeed:         1500.mps,
-                    communicationRange: 3500.m,
-                    interferenceRange:  3500.m,
-                    detectionRange:     4000.m,
+                    communicationRange: 5000.m,
+                    interferenceRange:  5000.m,
+                    detectionRange:     5000.m,
                     pDetection:         1,
                     pDecoding:          1
                 ]

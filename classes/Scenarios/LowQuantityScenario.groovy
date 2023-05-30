@@ -34,7 +34,7 @@ class LowQuantityScenario extends BaseScenario{
         for(def i = 0; i < this.getNodeCount(); i++){
 
             def theta = RandomUtils.nextFloat(0, 2*3.14159) 
-            def radius = RandomUtils.nextFloat(100,1000)                  
+            def radius = RandomUtils.nextFloat(500,2500)                  
             def x = radius*Math.cos(theta)
             def y = radius*Math.sin(theta)
             
@@ -43,7 +43,8 @@ class LowQuantityScenario extends BaseScenario{
 
         }
         
-        this.transmittersSetAll()
+        // this.transmittersSetAll()
+        this.setTransmitters([true, false,false])
         this.generateAddrLists()
         this.destNodesSetAll()
         this.setFileString("LowQuantityScenario")
