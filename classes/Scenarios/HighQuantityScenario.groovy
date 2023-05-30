@@ -46,11 +46,10 @@ class HighQuantityScenario extends BaseScenario{
         this.transmittersSetAll()
         this.generateAddrLists()
         this.destNodesSetAll()
+        this.setFileString("HighQuantityScenario")
         print "Object detais: ${this.dump()}\n"
+        
 
     }
 
-    String getFileString(){
-        return "HighQuantityScenario"
-    }
 }

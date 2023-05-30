@@ -27,11 +27,17 @@ class TransportGenerator extends UnetAgent {
     private boolean tx_flag
     def counter = 0
 
+    def data_msg = PDU.withFormat
+    {
+        uint32('data')
+    }
+    
+
     TransportGenerator(List<Integer> dest_nodes, float load, boolean tx_flag) {
         this.dest_nodes = dest_nodes                        
         this.load = load
         this.tx_flag = tx_flag
-        print "TX: ${tx_flag}\n" 
+        // print "TX dest_nodes: ${dest_nodes}\n" 
     }
 
 
@@ -39,6 +45,7 @@ class TransportGenerator extends UnetAgent {
     void startup() {
         print "TG Startup\n"
         this.phy = agentForService Services.PHYSICAL
+        subscribe this.phy
         this.mac = agentForService Services.MAC
         this.uwlink = agentForService Services.DATAGRAM
         this.router = agentForService Services.ROUTING
@@ -52,15 +59,18 @@ class TransportGenerator extends UnetAgent {
         float dataPktDuration = get(phy, Physical.DATA, PhysicalChannelParam.frameDuration)
         println "Transport Generator : dataPktDuration = ${dataPktDuration}"
         float rate = load/dataPktDuration                 
-
-        add new WakerBehavior(1000,{
-            print "SENDER @ ${100/rate}\n"
-            add new PoissonBehavior((int)(100/rate), {              
-                // create Poisson arrivals at given rate
-                def target = rnditem(dest_nodes)
-                router << new DatagramReq( to: target, protocol: Protocol.DATA, data : data_msg.encode([ data : 25]))
+        if(this.tx_flag){
+            add new WakerBehavior(1000,{
+                // print "SENDER @ ${100/rate}\n"
+                add new PoissonBehavior((int)(100/rate), {              
+                    // create Poisson arrivals at given rate
+                    def target = rnditem(dest_nodes)
+                    print "${node.address} sending to ${target}\n"
+                    router << new DatagramReq( to: target, protocol: Protocol.DATA, data : data_msg.encode([ data : 25]))
+                })
             })
-        })
+        }
+
     }
 
     @Override

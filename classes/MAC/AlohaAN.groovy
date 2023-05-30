@@ -23,6 +23,10 @@ import java.util.*
 import org.arl.unet.mac.*
 
 
+
+
+
+
 /**
  * The class implements the ALOHA AN protocol.
  *
@@ -99,7 +103,7 @@ class AlohaAN extends UnetAgent {
         node = agentForService(Services.NODE_INFO)  
         myAddr = node.Address       
         nodePosition = nodeList.indexOf(myAddr)
-
+        print "ST: ${schedule} ${schedule[nodePosition]}\n"
     }
 
     public void setup()
@@ -483,7 +487,7 @@ class AlohaAN extends UnetAgent {
         receivingNtfCheckFlag = 0
         int sendTimeStart     = getCurrentTime()
         int sendTimeEnd       = sendTimeStart + controlMsgDuration
-
+        print "${schedule} ${schedule[nodePosition]}\n"
         for(int j = 0; j<schedule[nodePosition].size(); j++)
         {
             if( sendTimeStart > schedule[nodePosition][j].busyTimeEnd )   

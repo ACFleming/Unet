@@ -46,11 +46,9 @@ class LowQuantityScenario extends BaseScenario{
         this.transmittersSetAll()
         this.generateAddrLists()
         this.destNodesSetAll()
+        this.setFileString("LowQuantityScenario")
         print "Object detais: ${this.dump()}\n"
 
     }
 
-    String getFileString(){
-        return "LowQuantityScenario"
-    }
 }

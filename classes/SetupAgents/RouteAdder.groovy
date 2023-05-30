@@ -60,7 +60,7 @@ class RouteAdder extends UnetAgent {
                         // print " ${nextHop},"
                         def r = EditRouteReq.newRoute()
                         r.to = addresses[to]
-                        r.nextHop = nextHop
+                        r.nextHop = addresses[nextHop]
                         r.hops = this.dists[to]
                         this.router << r
                     }

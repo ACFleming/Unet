@@ -17,6 +17,9 @@ import org.arl.unet.sim.channels.*
 import static org.arl.unet.Services.*
 import static org.arl.unet.phy.Physical.*
 import org.arl.fjage.Agent.*
+import org.apache.commons.lang3.RandomUtils
+import java.util.Random
+
 
 println '''
 Aloha-AN simulation
@@ -25,6 +28,11 @@ Aloha-AN simulation
 
 ///////////////////////////////////////////////////////////////////////////////
 // modem and channel model to use
+
+def rand = new Random()
+rand.setSeed(0)
+
+
 
 modem.dataRate = [2400, 2400].bps
 modem.frameLength = [4, 512].bytes
@@ -69,13 +77,13 @@ nodes.each { myAddr ->
   }
   else
   {    
-    double theta = rnd(0,2*Math.PI)
-    double radius = rnd(2.0, max_range)
+    def theta = rand.nextFloat() * 2*3.14159
+    def radius = rand.nextInt(2000)
     nodeLocation[myAddr] = [radius*Math.cos(theta), radius*Math.sin(theta), -10.m]     
   }
 }
  
-
+println nodeLocation
 // compute average distance between nodes for display
 def sum = 0
 def n = 0

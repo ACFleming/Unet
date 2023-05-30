@@ -65,6 +65,7 @@ class BaseScenario{
     def routing_dist = []
     def dest_nodes = []
     
+    def file_string = "BaseGridScenario"
 
     BaseScenario(){
 
@@ -106,9 +107,9 @@ class BaseScenario{
     }
 
     def getGenerator(int node_number, float load){
-        print "Transmitter status for ${this.address_list[node_number]}: ${this.transmitters[node_number]}\n"
+        // print "Transmitter status for ${this.address_list[node_number]}: ${this.transmitters[node_number]}\n"
         def l = new LoadGenerator(this.dest_nodes[node_number], load, this.transmitters[node_number])
-        print "DONE\n"
+        // print "DONE\n"
         return l
     }
 
@@ -118,8 +119,12 @@ class BaseScenario{
     }
 
 
+    String setFileString(def file_string){
+        this.file_string = file_string
+    }
+
     String getFileString(){
-        return "BaseGridScenario"
+        return this.file_string
     }
 
     void transmittersSetAll(){
@@ -224,6 +229,12 @@ class BaseScenario{
         return this.address_list;
     }
 
+
+    public void setAddressList(def address_list) {
+        this.address_list = address_list;
+    }
+
+
     public getMacType(def str){
         return this.macs[str]
     }
@@ -258,6 +269,10 @@ class BaseScenario{
         print "${this.node_locations[i]}\n"
     }
 
+
+    public void setNodeLocation(def node_locations) {
+        this.node_locations = node_locations;
+    }
 
     public def getTransmitters() {
         return this.transmitters;

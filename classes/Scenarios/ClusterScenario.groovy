@@ -69,9 +69,9 @@ class ClusterScenario extends BaseScenario{
         }
         print "Object detais: ${this.dump()}\n"
 
+        this.setFileString("ClusterScenario")
+
     }
 
-    String getFileString(){
-        return "ClusterScenario"
-    }
+
 }

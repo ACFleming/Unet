@@ -32,21 +32,24 @@ class CollinearScenario extends BaseScenario{
 
 
         this.setNodeCount(5)
+        this.setNodeLocation([])
         for(def i = 0; i < this.getNodeCount(); i++){
-            this.setNodeLocationRow(i, [3000*i, 0, -10])
+            this.setNodeLocationRow(i, [2100*i, 0, -10])
         }
-
-        this.setTransmitters([true, false, false, false, true])        
+        // this.setAddressList([])
+        this.setTransmitters([true, false, false, false, false])        
         this.generateAddrLists()
+        print "${this.getAddressList()}\n"
         this.dest_nodes = []
         for(def n = 0; n < this.getNodeCount(); n++){
             def d = []
-            
+            // this.getAddressList
             if(n == 0){
-                d.add(this.getAddressList(4))
-            }
-            if(n == 4){
-                d.add(this.getAddressList(0))
+                d = [this.getAddressList()[4]]
+            }else if(n == 4){
+                d = [this.getAddressList()[0]]
+            }else{
+                d.clear()
             }
             dest_nodes.add(d)
         }
@@ -69,20 +72,19 @@ class CollinearScenario extends BaseScenario{
             [4,3,2,1,0]
         ]
         this.setRoutingDist(routing_dist)
+        this.setFileString("CollinearScenario")
+        print "Object detais: ${this.dump()}\n"
 
     }
 
 
     def getGenerator(int node_number, float load){
-        print "Transmitter status for ${this.address_list[node_number]}: ${this.transmitters[node_number]}\n"
+        // print "Transmitter status for ${this.address_list[node_number]}: ${this.transmitters[node_number]}\n"
         // def l = new Tran(this.dest_nodes[node_number], load, this.transmitters[node_number])
         def t = new TransportGenerator(this.dest_nodes[node_number], load, this.transmitters[node_number])
-        print "DONE\n"
+        // print "DONE\n"
         return t
     }
 
 
-    String getFileString(){
-        return "CollinearScenario"
-    }
 }

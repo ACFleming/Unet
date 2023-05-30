@@ -16,6 +16,8 @@ import static org.arl.unet.Services.*
 import static org.arl.unet.phy.Physical.*
 import MAC.*
 import SetupAgents.*
+import org.apache.commons.lang3.RandomUtils
+import java.util.Random
 
 
 println '''
@@ -25,6 +27,10 @@ Slotted-FAMA simulation
 
 ///////////////////////////////////////////////////////////////////////////////
 // modem and channel model to use
+
+def rand = new Random()
+rand.setSeed(0)
+
 
 modem.dataRate = [2400, 2400].bps
 modem.frameLength = [4, 512].bytes
@@ -44,29 +50,13 @@ channel.detectionRange = 5.km
 ///////////////////////////////////////////////////////////////////////////////
 // simulation settings
 
-def nodes = 1..9                     // list of nodes
+def nodes = 1..6                     // list of nodes
 def loadRange = [0.1, 1.5, 0.1] 
-def T = 100.minutes                    // simulation horizon
-trace.warmup =  10.minutes            // collect statistics after a while
+def T = 100.minutes                       // simulation horizon
+trace.warmup =  10.minutes             // collect statistics after a while
 
 ///////////////////////////////////////////////////////////////////////////////
 // simulation details
-
-// generate random network geometry
-
-locations = [
-    [-1.km,  1.km, -10.m],
-    [ 0.km,  1.km, -10.m],
-    [ 1.km,  1.km, -10.m],
-    [-1.km,  0.km, -10.m],
-    [ 0.km,  0.km, -10.m],
-    [ 1.km,  0.km, -10.m],
-    [-1.km, -1.km, -10.m],
-    [ 0.km, -1.km, -10.m],
-    [ 1.km, -1.km, -10.m],
-]
-
-
 
 def addressList = new ArrayList<Integer>()
 for(int i = 0;i<nodes.size();i++)
@@ -74,13 +64,24 @@ for(int i = 0;i<nodes.size();i++)
   addressList.add((i+1))
 }
 
-double radius = 0.5.km
-double depth  = 5.0.m
+// Deploying nodes randomly within a radius
+
+def max_range = 2.5.km
 def nodeLocation = [:]
 nodes.each { myAddr ->
-  double theta = rnd(0,2*Math.PI)
-  nodeLocation[myAddr] = locations[myAddr-1]     
+  if(myAddr == 1)
+  {
+    nodeLocation[myAddr] = [0, 0, -10.m]    
+  }
+  else
+  {    
+    def theta = rand.nextFloat() * 2*3.14159
+    def radius = rand.nextInt(2000)
+    nodeLocation[myAddr] = [radius*Math.cos(theta), radius*Math.sin(theta), -10.m]     
+  }
 }
+
+
 
 // compute average distance between nodes for display
 def sum = 0
@@ -114,7 +115,7 @@ for (def load = loadRange[0]; load <= loadRange[1]; load += loadRange[2]) {
     nodes.each { myAddr ->
     
       float loadPerNode = load/nodes.size()     // divide network load across nodes evenly
-      def macAgent = new MySlottedFama()
+      def macAgent = new SlottedFama()
       node_list << node("${myAddr}", address: myAddr, location: nodeLocation[myAddr] , stack : { container -> 
       container.add 'mac', macAgent        
       }) 

@@ -42,13 +42,11 @@ class OffsetScenario extends BaseScenario{
             this.setNodeLocationRow(i, [x,y,z])
 
         }
+        this.setFileString("OffsetGridScenario")
         print "Object detais: ${this.dump()}\n"
         
         
 
     }
 
-    String getFileString(){
-        return "OffsetGridScenario"
-    }
 }

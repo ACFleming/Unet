@@ -103,7 +103,7 @@ class EquidistantScenario extends BaseScenario{
             [4,3,3,2,2,2,1,1,0]
         ]
         this.setRoutingDist(routing_dist)
-
+        this.setFileString("EquidistantScenario")
     }
 
 
@@ -116,7 +116,4 @@ class EquidistantScenario extends BaseScenario{
     }
 
 
-    String getFileString(){
-        return "CollinearScenario"
-    }
 }
