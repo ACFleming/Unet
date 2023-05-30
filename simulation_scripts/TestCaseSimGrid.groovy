@@ -14,7 +14,8 @@ import org.apache.commons.lang3.time.DateUtils
 /// IEEE INFOCOM 2007.
 /// Modified and adapted by A.C.Fleming (QinetiQ Australia 05/2023)
 ///////////////////////////////////-////////////////////////////////////////////
-
+import MAC.*
+import SetupAgents.*
 import org.arl.fjage.*
 import org.arl.unet.*
 import org.arl.unet.phy.*
@@ -107,7 +108,7 @@ for(int i = 0; i < nodeCount; i++){
 }
 
 
-def mac_name = "ALOHA"
+def mac_name = "SFAMA"
 def scenario_name = "counting"
 def date = new Date()
 def sdf = new SimpleDateFormat("HH-mm-ss")
@@ -139,19 +140,19 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
 
             float loadPerNode = load/nodeCount    
             
-            def macAgent = new AlohaAN()
+            def macAgent = new MAC.AlohaAN()
             switch(mac_name) {
                 case "ALOHA":
-                    macAgent = new AlohaAN()
+                    macAgent = new MAC.AlohaAN()
                 break
                 case "SFAMA":
-                    macAgent = new SlottedFama()
+                    macAgent = new MAC.SlottedFama()
                 break
                 case "CSMA":
-                    macAgent = new MyCSMA()
+                    macAgent = new MAC.MyCSMA()
                 break
                 default:
-                    macAgent = new AlohaAN()
+                    macAgent = new MAC.AlohaAN()
                 break
             }
 
@@ -175,7 +176,7 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
             
             destNodes = address_list.minus(address_list[n])
             if(tx_flag[n] == true){
-                container.add 'load', new LoadGenerator(destNodes, loadPerNode) 
+                container.add 'load', new SetupAgents.LoadGenerator(destNodes, loadPerNode, true) 
             }
             
         } // each

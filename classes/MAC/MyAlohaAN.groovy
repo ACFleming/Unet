@@ -156,43 +156,45 @@ class MyAlohaAN extends UnetAgent {
             for(int n2 = 0; n2 < this.nodeCount; n2++){
                 def dist = this.dist(node_locations[n1], node_locations[n2])
                 def delay = (int) (dist * 1000) / channel.soundSpeed + 0.5
-                row.add(delay)
+                // row.add(delay)
+                this.propagationDelay.add(delay)
                 
                 
             }
             
-            this.propagationDelay.add(row)
+            // this.propagationDelay.add(row)
         }
+        this.initilialisationPhase()
         // print this.propagationDelay
         
 
         
-        maxDelay.clear()
-        transmissionSlotsList.clear()
-        schedule.clear()
-        nodePosition = nodeList.indexOf(myAddr)
+        // maxDelay.clear()
+        // transmissionSlotsList.clear()
+        // schedule.clear()
+        // nodePosition = nodeList.indexOf(myAddr)
         
 
-        for(int i = 0; i < this.nodeCount; i++){
-            this.schedule.add(new ArrayList<MyAlohaAN.ScheduleSlot>())
+        // for(int i = 0; i < this.nodeCount; i++){
+        //     this.schedule.add(new ArrayList<MyAlohaAN.ScheduleSlot>())
             
-        }
-        for(int i = 0;i<this.nodeCount;i++){
+        // }
+        // for(int i = 0;i<this.nodeCount;i++){
 
-            schedule[i].clear()
+        //     schedule[i].clear()
             
 
-        }
+        // }
 
         
-        for(int i = 0; i<nodeCount; i++){
+        // for(int i = 0; i<nodeCount; i++){
         
-            maxDelay.add(propagationDelay[i].max())
-        }
+        //     maxDelay.add(propagationDelay[i].max())
+        // }
         
 
 
-        lagTime = maxDelay.max() + controlMsgDuration
+        // lagTime = maxDelay.max() + controlMsgDuration
 
         print "Aloha Init complete\n"
 
@@ -383,6 +385,7 @@ class MyAlohaAN extends UnetAgent {
                               to: tSlot.destination,
                               status: ReservationStatus.END)
                             send ntf1                                    // send START reservation notification
+                            print "${node.address} has permission to send to ${tSlot.destination}\n"
                             add new WakerBehavior(dataMsgDuration, 
                             {    // wait for reservation duration
                               send ntf2   
@@ -429,7 +432,7 @@ class MyAlohaAN extends UnetAgent {
 
     private void backoff(int bo, TransmissionSlot tSlot)
     {
-                       
+        print "${node.address} entering backoff with duration ${bo} in slot ${tSlot}\n"          
         add new BackoffBehavior(bo*dataMsgDuration, {
             if(tSlot != null)
             {
@@ -476,6 +479,7 @@ class MyAlohaAN extends UnetAgent {
                                 phy << new ClearReq()
                                 rxDisable()
                                 def rsp1 = phy << new TxFrameReq(to: Address.BROADCAST, type: Physical.CONTROL , data : ntfMsg.encode([ destinationNodeAddress : tSlot.destination]))
+                                print "${node.address} sending ntf from backoff\n"
                                 sendData(tSlot)                     
                                 
                             }
@@ -579,7 +583,7 @@ class MyAlohaAN extends UnetAgent {
         receivingNtfCheckFlag = 0
         int sendTimeStart     = getCurrentTime()
         int sendTimeEnd       = sendTimeStart + controlMsgDuration
-        print "${schedule} ${schedule[nodePosition]}\n"
+        // print "${schedule} ${schedule[nodePosition]}\n"
         for(int j = 0; j<schedule[nodePosition].size(); j++)
         {
             if( sendTimeStart > schedule[nodePosition][j].busyTimeEnd )   

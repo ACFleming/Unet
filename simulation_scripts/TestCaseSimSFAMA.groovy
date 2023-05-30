@@ -2,11 +2,13 @@
 ///////////////////////////////////////////////////////////////////////////////
 /// 
 /// To run simulation:
-///   bin/unet Slotted FAMA/BenchmarkedScenario2Sim.groovy
+///   bin/unet Slotted FAMA/TestCaseSim.groovy
 ///
 /// Output trace file: logs/trace.nam
 ///
 ///////////////////////////////////-////////////////////////////////////////////
+import MAC.*
+import SetupAgents.*    
 import org.arl.fjage.*
 import org.arl.unet.*
 import org.arl.unet.phy.*
@@ -14,11 +16,6 @@ import org.arl.unet.sim.*
 import org.arl.unet.sim.channels.*
 import static org.arl.unet.Services.*
 import static org.arl.unet.phy.Physical.*
-import MAC.*
-import SetupAgents.*
-import org.apache.commons.lang3.RandomUtils
-import java.util.Random
-
 
 println '''
 Slotted-FAMA simulation
@@ -28,35 +25,46 @@ Slotted-FAMA simulation
 ///////////////////////////////////////////////////////////////////////////////
 // modem and channel model to use
 
-def rand = new Random()
-rand.setSeed(0)
-
-
-modem.dataRate = [2400, 2400].bps
-modem.frameLength = [4, 512].bytes
+modem.dataRate         = [2400, 2400].bps
+modem.frameLength      = [12, 375].bytes
 modem.preambleDuration = 0
-modem.txDelay = 0
-modem.clockOffset = 0.s
-modem.headerLength = 0.s
+modem.txDelay          = 0
+modem.clockOffset      = 0.s
+modem.headerLength     = 0.s
 
-channel.model = ProtocolChannelModel
-channel.soundSpeed = 1500.mps
-channel.communicationRange = 5.km
-channel.interferenceRange = 5.km
-channel.detectionRange = 5.km
+channel.model               = ProtocolChannelModel
+channel.soundSpeed          = 1500.mps
+channel.communicationRange  = 3.km
+channel.interferenceRange   = 3.km
+channel.detectionRange      = 3.km
 
-//platform = org.arl.fjage.RealTimePlatform
 
 ///////////////////////////////////////////////////////////////////////////////
 // simulation settings
 
-def nodes = 1..6                     // list of nodes
-def loadRange = [0.1, 1.5, 0.1] 
-def T = 100.minutes                       // simulation horizon
-trace.warmup =  10.minutes             // collect statistics after a while
+def nodes = 1..6                    // list of nodes
+def loadRange = [0.1, 1.5, 0.1]     // min, max, step
+def T         = 100.minutes          // simulation horizon
+trace.warmup  = 10.0.minutes        // collect statistics after a while
 
 ///////////////////////////////////////////////////////////////////////////////
 // simulation details
+
+// generate random network geometry
+def nodeLocation = [:]
+
+def xPos = new Integer[6]
+xPos[0] = 1
+xPos[1] = 2
+xPos[2] = 3
+xPos[3] = 1
+xPos[4] = 2
+xPos[5] = 3
+
+nodes.each { myAddr ->
+  int yPos = myAddr/4
+  nodeLocation[myAddr] = [xPos[myAddr-1].km, yPos.km, -15.m]
+}
 
 def addressList = new ArrayList<Integer>()
 for(int i = 0;i<nodes.size();i++)
@@ -64,24 +72,39 @@ for(int i = 0;i<nodes.size();i++)
   addressList.add((i+1))
 }
 
-// Deploying nodes randomly within a radius
-
-def max_range = 2.5.km
-def nodeLocation = [:]
-nodes.each { myAddr ->
-  if(myAddr == 1)
-  {
-    nodeLocation[myAddr] = [0, 0, -10.m]    
-  }
-  else
-  {    
-    def theta = rand.nextFloat() * 2*3.14159
-    def radius = rand.nextInt(2000)
-    nodeLocation[myAddr] = [radius*Math.cos(theta), radius*Math.sin(theta), -10.m]     
-  }
+ArrayList<ArrayList<Integer>> destinationList  = new ArrayList<ArrayList<Integer>>()
+for(int i = 0;i<nodes.size();i++)
+{
+  destinationList.add(new ArrayList<Integer>())   
 }
 
+destinationList[0].add(2)
+destinationList[0].add(4)
+destinationList[0].add(5)
 
+destinationList[1].add(1)
+destinationList[1].add(3)
+destinationList[1].add(4)
+destinationList[1].add(5)
+destinationList[1].add(6)
+
+destinationList[2].add(2)
+destinationList[2].add(5)
+destinationList[2].add(6)
+
+destinationList[3].add(1)
+destinationList[3].add(2)
+destinationList[3].add(5)
+
+destinationList[4].add(1)
+destinationList[4].add(2)
+destinationList[4].add(3)
+destinationList[4].add(4)
+destinationList[4].add(6)
+
+destinationList[5].add(2)
+destinationList[5].add(3)
+destinationList[5].add(5)
 
 // compute average distance between nodes for display
 def sum = 0
@@ -97,7 +120,6 @@ nodes.each { n1 ->
     propagationDelay[n1-1][n2-1] = (int)(distance(nodeLocation[n1],nodeLocation[n2]) * 1000 / channel.soundSpeed + 0.5)
   }
 }
-
 def avgRange = sum/n
 println """Average internode distance: ${Math.round(avgRange)} m, delay: ${Math.round(1000*avgRange/channel.soundSpeed)} ms
 
@@ -115,28 +137,29 @@ for (def load = loadRange[0]; load <= loadRange[1]; load += loadRange[2]) {
     nodes.each { myAddr ->
     
       float loadPerNode = load/nodes.size()     // divide network load across nodes evenly
-      def macAgent = new MySlottedFama()
+      def macAgent = new MAC.MySlottedFama()
+      
       node_list << node("${myAddr}", address: myAddr, location: nodeLocation[myAddr] , stack : { container -> 
       container.add 'mac', macAgent        
       }) 
 
-    for(int i = 0; i<nodes.size(); i++)
-    {
-      for(int j = 0; j<nodes.size(); j++)
+      for(int i = 0; i<nodes.size(); i++)
       {
-        if(propagationDelay[i][j] > maxPropagationDelay)
+        for(int j = 0; j<nodes.size(); j++)
         {
-          maxPropagationDelay = propagationDelay[i][j]
-        }
-      } 
-    }        
+          if(propagationDelay[i][j] > maxPropagationDelay)
+          {
+            maxPropagationDelay = propagationDelay[i][j]
+          }
+        } 
+      }        
 
       macAgent.timerCtsTimeoutOpMode = 2
       macAgent.maxPropagationDelay = maxPropagationDelay
       macAgent.dataMsgDuration = (int)(8000*modem.frameLength[1]/modem.dataRate[1] + 0.5)
-      macAgent.controlMsgDuration = (int)(8000*modem.frameLength[0]/modem.dataRate[0] + 0.5)
-    //   print nodes-myAddr
-      container.add 'load', new OldLoadGenerator(nodes-myAddr, loadPerNode)
+      macAgent.controlMsgDuration = (int)(8000*modem.frameLength[0]/modem.dataRate[0] + 0.5)      
+      container.add 'load', new SetupAgents.OldLoadGenerator(destinationList[myAddr-1], loadPerNode)        
+
     } // each       
 
   }  // simulate

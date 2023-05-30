@@ -4,9 +4,6 @@ This file is released under Simplified BSD License.
 Go to http://www.opensource.org/licenses/BSD-3-Clause for full license details.
 ******************************************************************************/
 package MAC
-import MAC.SlottedFama
-import org.arl.unet.UnetAgent
-
 import org.arl.fjage.*
 import org.arl.fjage.param.*
 import org.arl.unet.*
@@ -19,7 +16,7 @@ import org.arl.unet.nodeinfo.*
  * Molins, Marcal, and Milica Stojanovic. "Slotted FAMA: a MAC protocol for underwater acoustic networks."
  * OCEANS 2006-Asia Pacific. IEEE, 2007.
  */
-class MySlottedFama extends UnetAgent {
+class OldSlottedFama extends UnetAgent {
 
     ////// protocol constants
 
@@ -98,23 +95,23 @@ class MySlottedFama extends UnetAgent {
             {
                 long currentTime  = GetCurrentTime()
 
-                // print "slotLength:"
-                // print slotLength
+                print "slotLength:"
+                print slotLength
                 int timeForNextSlot = slotLength - ( (currentTime - startTime) % slotLength )
                 // print "FAIL"
-                // print 'IDLE\n'
+
                 after(timeForNextSlot.milliseconds)
                 {
-                    // print 'CHECKING if modem is busy\n'
                     modemBusy = ModemCheck()
-                    if (!modemBusy){
+                    if (!modemBusy)
+                    {
                         if(!queue.isEmpty())
                         {
-                            // print "TX State\n"
                             setNextState(State.TX_RTS)
                         }
-                    }else{
-                        // print "RECEIVING\n"
+                    }
+                    else
+                    {
                         setNextState(State.RECEIVING)
                     }
                 }
@@ -146,10 +143,6 @@ class MySlottedFama extends UnetAgent {
             onEnter
             {
                 Message msg = queue.peek()
-                // for(Message m: queue){
-                //     print "Message : ${m}\n"
-                // }
-                print "${node.address} sending message: ${msg}\n"
                 def bytes = controlMsg.encode(type: RTS_PDU, duration: Math.ceil(msg.duration*1000))
                 phy << new ClearReq()
                 phy << new TxFrameReq(to: msg.to, type: Physical.CONTROL, protocol: PROTOCOL, data: bytes)
@@ -166,7 +159,6 @@ class MySlottedFama extends UnetAgent {
             //Wait for CTS till the end of the next slot.
             onEnter
             {
-                print "${node.address} Waiting for CTS\n"
                 long currentTime  = GetCurrentTime()
                 waitTimeForCTS = slotLength - ( (currentTime - startTime) % slotLength ) + slotLength
                 after(waitTimeForCTS.milliseconds)
@@ -176,14 +168,12 @@ class MySlottedFama extends UnetAgent {
                     backoffStartTime = GetCurrentTime()
                     backoffEndTime = backoffStartTime + backoff
                     endTimeBackoffCtsTimeout = backoffEndTime
-                    print "${node.address} CTS TIMEOUT\n"
                     setNextState(State.BACKOFF_CTS_TIMEOUT)
                 }
             }
 
             onEvent(Event.RX_CTS)
             {
-                
                 setNextState(State.TX_DATA)
             }
         }
@@ -198,7 +188,6 @@ class MySlottedFama extends UnetAgent {
                 after(timeForNextSlot.milliseconds)
                 {
                     ReservationReq msg = queue.peek()
-                    print "${node.address} SENDING AND WAITING FOR ACK\n"
                     sendReservationStatusNtf(msg, ReservationStatus.START)
                     after(msg.duration)
                     {
@@ -222,7 +211,6 @@ class MySlottedFama extends UnetAgent {
                     {
                         sendReservationStatusNtf(queue.poll(), ReservationStatus.FAILURE)
                         retryCount = 0
-                        print "${node.address} ACK TIMEOUT\n"
                         setNextState(State.IDLE)
                     }
                     else
@@ -260,6 +248,9 @@ class MySlottedFama extends UnetAgent {
             {
                 int destination = senderRTS.get(new Random().nextInt(senderRTS.size()))
                 senderRTS.clear()
+                if(rxInfo.duration == null){
+                    rxInfo.duration = slotLength
+                }
                 def bytes = controlMsg.encode(type: CTS_PDU, duration: Math.round(rxInfo.duration*1000))
                 phy << new ClearReq()
                 phy << new TxFrameReq(to: destination, type: Physical.CONTROL, protocol: PROTOCOL, data: bytes)
@@ -676,17 +667,13 @@ class MySlottedFama extends UnetAgent {
         {
             //Enter this state when you sense carrier in the IDLE state or after backoff timer expires in BACKOFF_X_RTS state.
             onEvent(Event.RX_RTS){info ->
-                
-
                 rxInfo = info
                 senderRTS.add(rxInfo.from)
-                print "${node.address} sending CTS to ${info.from} at next slot\n"
                 long currentTime = GetCurrentTime()
                 long delayForTX_CTS = slotLength - ( (currentTime - startTime) % slotLength )
                 correspondent = info.from
                 after(delayForTX_CTS.milliseconds)
                 {
-                    
                     setNextState(State.TX_CTS)
                 }
             }
@@ -699,7 +686,7 @@ class MySlottedFama extends UnetAgent {
                 backoff = info.duration
                 backoffStartTime = GetCurrentTime()
                 backoffEndTime = backoffStartTime + backoff
-                setNextState(State.BACKOFF_X_CTS)
+                setNextState(State.BACKOFF_X_RTS)
             }
 
             onEvent(Event.SNOOP_CTS) { info ->
@@ -838,61 +825,52 @@ class MySlottedFama extends UnetAgent {
         register Services.MAC
     }
 
-    private double dist(n1, n2){
-        def sqr_sum = 0
-        for(int i = 0; i < n1.size(); i++){
-            sqr_sum +=(n1[i]-n2[i])*(n1[i]-n2[i])
-        }
-        return Math.sqrt(sqr_sum)
-    }
-
-
     public void initParams(address_list, List node_locations, channel, modem){
         print "INIT"
         def nodes = []
-        def nodeCount = address_list.size()
         
         print node_locations.size()
-        for(int i = 0; i<nodeCount; i++){
+        for(int i = 0; i<node_locations.size(); i++){
             nodes.add(i)
         }
         def sum = 0
         def n = 0
         def maxPropagationDelay = 0
-        def propagationDelay = new ArrayList<ArrayList<Integer>>();
-
-        for(int n1 = 0; n1 < nodeCount; n1++){
-            
-            def row = new ArrayList<Integer>()
-
-            for(int n2 = 0; n2 < nodeCount; n2++){
-                def dist = this.dist(node_locations[n1], node_locations[n2])
-                def delay = (int) (dist * 1000) / channel.soundSpeed + 0.5
-                if( delay > maxPropagationDelay){
-                    maxPropagationDelay = delay
+        def propagationDelay = new Integer[nodes.size()][nodes.size()]
+        nodes.each { n1 ->
+            nodes.each { n2 ->
+                print n1
+                print n2
+                print '\n'
+                if (n1 < n2) {
+                    n++
+                    sum += distance(node_locations[n1], node_locations[n2])
                 }
-                row.add(delay)
-                
-                
+                // assert channel.soundSpeed != 0
+                // print channel.soundSpeed
+                // print 1000 / channel.soundSpeed
+                print 'here'
+                propagationDelay[n1][n2] = (int)( (distance(node_locations[n1],node_locations[n2]) * 1000 / channel.soundSpeed) + 0.5 ) 
+                print "there" 
             }
-            
-            propagationDelay.add(row)
         }
 
-
+        for(int i = 0; i<nodes.size(); i++){
+            for(int j = 0; j<nodes.size(); j++){
+                if(propagationDelay[i][j] > maxPropagationDelay){
+                    maxPropagationDelay = propagationDelay[i][j]
+                }
+            } 
+        } 
         this.timerCtsTimeoutOpMode = 2
         this.maxPropagationDelay = maxPropagationDelay
-        print "Max prop"
-        print this.maxPropagationDelay
-        print "\n"
-
         assert modem.dataRate[0] != 0
         assert modem.dataRate[1] != 0
         this.dataMsgDuration = (int)(8000*modem.frameLength[1]/modem.dataRate[1] + 0.5)
         this.setControlMsgDuration((int)(8000*modem.frameLength[0]/modem.dataRate[0] + 0.5))
         this.slotLength = controlMsgDuration + maxPropagationDelay + 1
-        print "Slot length: ${this.slotLength}\n"
-        print "SL\n"
+        print this.slotLength
+        print "SL"
 
     }
 
@@ -906,11 +884,10 @@ class MySlottedFama extends UnetAgent {
         subscribe(topic(phy, Physical.SNOOP))
 
         startTime = 0
-        print "${this.node.Address}\n"
-        // addr = node.Address
+
         addr = node.Address
         // assert 7 == 6
-        // print "FSM"
+        print "FSM"
         
         add(fsm)
 
@@ -941,32 +918,32 @@ class MySlottedFama extends UnetAgent {
 
     private int ModemCheck()
     {
-        if(phy.busy){
+        if(phy.busy)
+        {
             return 1
         }
-        return 0
-        
+        else
+        {
+            return 0
+        }
     }
 
     @Override
     Message processRequest(Message msg)
     {
-        // print "{Received request in SFAMA: ${msg}\n"
         switch (msg)
         {
             case ReservationReq:
-                if (msg.to == Address.BROADCAST || msg.to == addr) return new Message(msg, Performative.REFUSE)
-                if (msg.duration <= 0 || msg.duration > maxReservationDuration) return new Message(msg, Performative.REFUSE)
-                if (queue.size() >= MAX_QUEUE_LEN) return new Message(msg, Performative.REFUSE)
-                queue.add(msg)
-                fsm.trigger(Event.RESERVATION_REQ)
-                // print "GOT REQUEST\n"
-                print "${node.address} requesting to send to ${msg.to}\n"
-                return new ReservationRsp(msg)
+            if (msg.to == Address.BROADCAST || msg.to == addr) return new Message(msg, Performative.REFUSE)
+            if (msg.duration <= 0 || msg.duration > maxReservationDuration) return new Message(msg, Performative.REFUSE)
+            if (queue.size() >= MAX_QUEUE_LEN) return new Message(msg, Performative.REFUSE)
+            queue.add(msg)
+            fsm.trigger(Event.RESERVATION_REQ)
+            return new ReservationRsp(msg)
             case ReservationCancelReq:
             case ReservationAcceptReq:
             case TxAckReq:
-                return new Message(msg, Performative.REFUSE)
+            return new Message(msg, Performative.REFUSE)
         }
         return null
     }
@@ -974,11 +951,10 @@ class MySlottedFama extends UnetAgent {
     @Override
     void processMessage(Message msg)
     {
-        // print "${addr} received ${msg}\n"
         if (msg instanceof RxFrameNtf)
         {
             def rx = controlMsg.decode(msg.data)
-            // print "RX:${rx}\n"
+            
             long currentTime = GetCurrentTime()
             int timeForNextSlot = slotLength - ( (currentTime - startTime ) % slotLength )
             def info = [from: msg.from, to: msg.to, duration: slotLength]
@@ -992,28 +968,23 @@ class MySlottedFama extends UnetAgent {
                 {
                     if(info.to == addr)
                     {
-                        print "         ${node.address} RECEIVED RTS\n"
                         info.duration = rx.duration
                         fsm.trigger(Event.RX_RTS, info)
                     }
                     else
                     {
-                    print "                     ${node.address} SNOOP RTS\n"
                         info.duration = 2*slotLength
                         fsm.trigger(Event.SNOOP_RTS, info)
                     }
                 }
                 else if (rx.type == CTS_PDU)
                 {
-                    
                     if(info.to == addr)
                     {
-                        print "         ${node.address} RECEIVED CTS\n"
                         fsm.trigger(Event.RX_CTS)
                     }
                     else
                     {
-                        print "                 ${node.address} SNOOP CTS\n"
                         info.duration = timeForNextSlot+dataMsgDuration+maxPropagationDelay+2*slotLength - ((currentTime-startTime+timeForNextSlot+dataMsgDuration+maxPropagationDelay)%slotLength)
                         fsm.trigger(Event.SNOOP_CTS, info)
                     }
@@ -1022,12 +993,10 @@ class MySlottedFama extends UnetAgent {
                 {
                     if(info.to == addr)
                     {
-                        print "         ${node.address} RECEIVED ACK\n"
                         fsm.trigger(Event.RX_ACK, info)
                     }
                     else
                     {
-                        print "                 ${node.address} SNOOP ACK\n"
                         fsm.trigger(Event.SNOOP_ACK, info)
                     }
                 }
@@ -1035,12 +1004,10 @@ class MySlottedFama extends UnetAgent {
                 {
                     if(info.to == addr)
                     {
-                        print "         ${node.address} RECEIVED NACK\n"
                         fsm.trigger(Event.RX_NACK, info)
                     }
                     else
                     {
-                        print "                 ${node.address} SNOOP NACK\n"
                         info.duration = timeForNextSlot+dataMsgDuration+maxPropagationDelay+2*slotLength - ((currentTime-startTime+timeForNextSlot+dataMsgDuration+maxPropagationDelay-startTime)%slotLength)
                         fsm.trigger(Event.SNOOP_NACK, info)
                     }
@@ -1058,10 +1025,8 @@ class MySlottedFama extends UnetAgent {
 
                 if(info.to == addr)
                 {
-                    // info.duration = get(phy, Physical.CONTROL, PhysicalChannelParam.frameDuration)
-                    info.duration = phy[2].frameDuration
+                    info.duration = phy[0].frameDuration
                     info.from     = msg.getFrom()
-                    print "${node.address} RECEIVED DATA\n"
                     fsm.trigger(Event.RX_DATA, info)
                 }
                 else
@@ -1090,7 +1055,6 @@ class MySlottedFama extends UnetAgent {
             }
             else
             {
-                println "BADFRAME\n"
                 fsm.trigger(Event.BADFRAME_NTF, backoff)
             }
         }

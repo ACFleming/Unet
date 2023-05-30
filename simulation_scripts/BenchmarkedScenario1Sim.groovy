@@ -117,7 +117,8 @@ for (def load = loadRange[0]; load <= loadRange[1]; load += loadRange[2]) {
     nodes.each { myAddr ->
     
       float loadPerNode = load/nodes.size()     // divide network load across nodes evenly
-      def macAgent = new MAC.AlohaAN()
+    //   def macAgent = new MAC.AlohaAN()
+    def macAgent = new MAC.MyCSMA()
       if(myAddr == 1)
       {
         node_list << node("${myAddr}", address: myAddr, location: nodeLocation[myAddr] , shell : true, stack : { container ->   
@@ -132,31 +133,31 @@ for (def load = loadRange[0]; load <= loadRange[1]; load += loadRange[2]) {
         })
       }    
 
-      for(int i = 0;i<addressList.size();i++)
-      {
-        for(int j = 0;j<addressList.size();j++)
-        {
-          if(propagationDelay[i][j] != propagationDelay[j][i])
-          {
-            log.warning 'ERROR IN PROPAGATION_DELAY_PARAMETER'
-          }  
-          else
-          {
-            if(i == j && propagationDelay[i][i] != 0.0)
-            {
-              log.warning 'ERROR IN PROPAGATION_DELAY_PARAMETER'
-            }
-            else
-            {
-              macAgent.propagationDelay.add(propagationDelay[i][j])                                     
-            }            
-          }  
-        }
-      } 
+    //   for(int i = 0;i<addressList.size();i++)
+    //   {
+    //     for(int j = 0;j<addressList.size();j++)
+    //     {
+    //       if(propagationDelay[i][j] != propagationDelay[j][i])
+    //       {
+    //         log.warning 'ERROR IN PROPAGATION_DELAY_PARAMETER'
+    //       }  
+    //       else
+    //       {
+    //         if(i == j && propagationDelay[i][i] != 0.0)
+    //         {
+    //           log.warning 'ERROR IN PROPAGATION_DELAY_PARAMETER'
+    //         }
+    //         else
+    //         {
+    //           macAgent.propagationDelay.add(propagationDelay[i][j])                                     
+    //         }            
+    //       }  
+    //     }
+    //   } 
 
-      macAgent.dataMsgDuration = (int)(8000*modem.frameLength[1]/modem.dataRate[1] + 0.5)
-      macAgent.controlMsgDuration = (int)(8000*modem.frameLength[0]/modem.dataRate[0] + 0.5)
-      macAgent.nodeList  = addressList
+    //   macAgent.dataMsgDuration = (int)(8000*modem.frameLength[1]/modem.dataRate[1] + 0.5)
+    //   macAgent.controlMsgDuration = (int)(8000*modem.frameLength[0]/modem.dataRate[0] + 0.5)
+    //   macAgent.nodeList  = addressList
       if(myAddr != 1)
       {
         container.add 'load', new SetupAgents.OldLoadGenerator([1], loadPerNode)        

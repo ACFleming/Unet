@@ -100,6 +100,7 @@ for (def load = loadRange[0]; load <= loadRange[1]; load += loadRange[2]) {
     
       float loadPerNode = load/nodes.size()     // divide network load across nodes evenly
       def macAgent = new MAC.AlohaAN()
+
       if(myAddr == 1)
       {
         node_list << node("${myAddr}", address: myAddr, location: nodeLocation[myAddr] , shell : true, stack : { container ->   

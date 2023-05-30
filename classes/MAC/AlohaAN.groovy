@@ -487,7 +487,7 @@ class AlohaAN extends UnetAgent {
         receivingNtfCheckFlag = 0
         int sendTimeStart     = getCurrentTime()
         int sendTimeEnd       = sendTimeStart + controlMsgDuration
-        print "${schedule} ${schedule[nodePosition]}\n"
+        // print "${schedule} ${schedule[nodePosition]}\n"
         for(int j = 0; j<schedule[nodePosition].size(); j++)
         {
             if( sendTimeStart > schedule[nodePosition][j].busyTimeEnd )   

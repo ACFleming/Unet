@@ -313,7 +313,6 @@ class SlottedFama extends UnetAgent {
             //Transmit an ACK packet
             onEnter
             {
-                print "${rxInfo}\n"
                 def bytes = controlMsg.encode(type: ACK_PDU, duration: Math.round(rxInfo.duration))
                 phy << new ClearReq()
                 phy << new TxFrameReq(to: rxInfo.from, type: Physical.CONTROL, protocol: PROTOCOL, data: bytes)
@@ -895,9 +894,10 @@ class SlottedFama extends UnetAgent {
         if (msg instanceof RxFrameNtf)
         {
             def rx = controlMsg.decode(msg.data)
-            def info = [from: msg.from, to: msg.to]
+            
             long currentTime = GetCurrentTime()
             int timeForNextSlot = slotLength - ( (currentTime - startTime ) % slotLength )
+            def info = [from: msg.from, to: msg.to]
 
             if(msg.type == Physical.CONTROL)
             {
@@ -965,9 +965,9 @@ class SlottedFama extends UnetAgent {
 
                 if(info.to == addr)
                 {
-                    info.duration = get(phy, Physical.CONTROL, PhysicalChannelParam.frameDuration)
-                    // def fd =  
-                    // print "PHY FD: ${fd}\n"
+                    info.duration = phy[1].frameDuration
+                    // info.duration = get(phy, Physical.DATA, PhysicalChannelParam.frameDuration)
+                    print "Info duration ${info.duration}\n"
                     info.from     = msg.getFrom()
                     fsm.trigger(Event.RX_DATA, info)
                 }
@@ -1034,6 +1034,7 @@ class SlottedFama extends UnetAgent {
   ////// utility methods
 
     private void sendReservationStatusNtf(ReservationReq msg, ReservationStatus status) {
-        send new ReservationStatusNtf(recipient: msg.sender, inReplyTo: msg.msgID, to: msg.to, from: addr, status: status)    }
+        send new ReservationStatusNtf(recipient: msg.sender, inReplyTo: msg.msgID, to: msg.to, from: addr, status: status)
+    }
 
 }
