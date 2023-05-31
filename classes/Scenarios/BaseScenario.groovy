@@ -64,6 +64,7 @@ class BaseScenario{
     def routing_steps = []
     def routing_dist = []
     def dest_nodes = []
+    def motion_counters = []
     
     def file_string = "BaseGridScenario"
 
@@ -118,6 +119,25 @@ class BaseScenario{
         return r
     }
 
+    def getMotion(int node_number){
+        return {ts -> 
+                    def set_point = [speed: 0]
+                    return set_point
+                }
+    
+    }
+
+    def getMotionCounters(){
+        return this.motion_counters
+    }
+
+    def setMotionCounters(def counters){
+        this.motion_counters = counters
+    }
+
+    def setMotionCounterVal(int index, int value){
+        this.motion_counters[index] = value
+    }
 
     String setFileString(def file_string){
         this.file_string = file_string

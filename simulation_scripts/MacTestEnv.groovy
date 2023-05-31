@@ -65,9 +65,10 @@ def l = new LowQuantityScenario()
 def c = new ClusterScenario()
 def cl = new CollinearScenario()
 def e = new EquidistantScenario()
+def mo = new MobileScenario()
 
 
-def scenario = l
+def scenario = mo
 
 // def mac_name = "ALOHA"
 
@@ -79,7 +80,7 @@ def scenario = l
 for (m in scenario.getMacs()){
 
     def mac_name = m.key
-    if(mac_name != "SFAMA"){
+    if(mac_name != "CSMA"){
         continue
     }
 
@@ -112,7 +113,7 @@ for (m in scenario.getMacs()){
                 // print "INIT"
                 
                 
-                node_list << node("Node${n+1}", address: scenario.getAddressList()[n], location: scenario.getNodeLocations()[n] , web: scenario.getWebList()[n], api:scenario.getApiList()[n],  stack : { container -> 
+                node_list << node("Node${n+1}", address: scenario.getAddressList()[n], location: scenario.getNodeLocations()[n] , web: scenario.getWebList()[n], api:scenario.getApiList()[n], mobility: true,  stack : { container -> 
                 container.add 'arp',            new org.arl.unet.addr.AddressResolution()
                 container.add 'ranging',        new org.arl.unet.localization.Ranging()
                 container.add 'uwlink',         new org.arl.unet.link.ReliableLink()
@@ -122,6 +123,7 @@ for (m in scenario.getMacs()){
                 container.add 'mac',            macAgent 
                 
                 }) 
+                node_list[n].motionModel = scenario.getMotion(n)
                 
                 // print "Loads and routes\n"
                 def ld = scenario.getGenerator(n, loadPerNode)

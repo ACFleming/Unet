@@ -133,21 +133,21 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
 
             float loadPerNode = load/nodeCount    
             
-            def macAgent = new AlohaAN()
-            switch(mac_name) {
-                case "ALOHA":
-                    macAgent = new AlohaAN()
-                break
-                case "SFAMA":
-                    macAgent = new SlottedFama()
-                break
-                case "CSMA":
-                    macAgent = new MyCSMA()
-                break
-                default:
-                    macAgent = new AlohaAN()
-                break
-            }
+            // def macAgent = new AlohaAN()
+            // switch(mac_name) {
+            //     case "ALOHA":
+            //         macAgent = new AlohaAN()
+            //     break
+            //     case "SFAMA":
+            //         macAgent = new SlottedFama()
+            //     break
+            //     case "CSMA":
+            //         macAgent = new MyCSMA()
+            //     break
+            //     default:
+            //         macAgent = new AlohaAN()
+            //     break
+            // }
 
             
             
@@ -178,7 +178,7 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
             }
             // println destNodes
             
-            container.add 'load', new TransportGenerator(destNodes, loadPerNode, tx_flag[n]) 
+            // container.add 'load', new TransportGenerator(destNodes, loadPerNode, tx_flag[n]) 
             
             
         } // each

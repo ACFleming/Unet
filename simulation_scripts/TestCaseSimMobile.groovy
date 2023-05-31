@@ -56,7 +56,7 @@ channel.communicationRange = 5.km
 channel.interferenceRange = 5.km
 channel.detectionRange = 5.km
 
-// platform = org.arl.fjage.RealTimePlatform
+platform = org.arl.fjage.RealTimePlatform
 
 ///////////////////////////////////////////////////////////////////////////////
 // simulation settings
@@ -68,10 +68,10 @@ def T = 100.minutes                       // simulation horizon
 
 locations = [
     [0,  0, -10],
-    [573,  0, -10],
-    [573+1146, 0, -10],
-    [573+2*1146,  0, -10],
-    [0, 1000, -10],
+    [500,  0, -10],
+    [1500, 0, -10],
+    [2500,  0, -10],
+    [0, 1145.92, -10],
 
 ]
 
@@ -126,7 +126,7 @@ out << "{load}, {dropCount}, {enqueCount}, {simLoad}, {meanDelay}, {offeredLoard
 // simulate at various arrival rates
 for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
     
-    simulate T, {
+    simulate  {
 
         def node_list = []
 
@@ -138,21 +138,21 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
 
             float loadPerNode = load/nodeCount    
             
-            def macAgent = new AlohaAN()
-            switch(mac_name) {
-                case "ALOHA":
-                    macAgent = new AlohaAN()
-                break
-                case "SFAMA":
-                    macAgent = new SlottedFama()
-                break
-                case "CSMA":
-                    macAgent = new MyCSMA()
-                break
-                default:
-                    macAgent = new AlohaAN()
-                break
-            }
+            // def macAgent = new AlohaAN()
+            // switch(mac_name) {
+            //     case "ALOHA":
+            //         macAgent = new AlohaAN()
+            //     break
+            //     case "SFAMA":
+            //         macAgent = new SlottedFama()
+            //     break
+            //     case "CSMA":
+            //         macAgent = new MyCSMA()
+            //     break
+            //     default:
+            //         macAgent = new AlohaAN()
+            //     break
+            // }
 
             
             
@@ -163,54 +163,108 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
             container.add 'transport',      new org.arl.unet.transport.SWTransport()
             container.add 'router',         new org.arl.unet.net.Router()
             container.add 'rdp',            new org.arl.unet.net.RouteDiscoveryProtocol()
-            container.add 'mac',            macAgent 
+            // container.add 'mac',            macAgent 
             })    
-            try{
-                macAgent.initParams(address_list,node_locations,channel, modem)
-            } catch (MissingMethodException e1){
-                println e1.toString()
+            // try{
+            //     macAgent.initParams(address_list,node_locations,channel, modem)
+            // } catch (MissingMethodException e1){
+            //     println e1.toString()
                 
-            }
+            // }
             
             destNodes = address_list.minus(address_list[n])
-            if(tx_flag[n] == true){
-                container.add 'load', new LoadGenerator(destNodes, loadPerNode) 
-            }
-            
+            // if(tx_flag[n] == true){
+            //     container.add 'load', new LoadGenerator(destNodes, loadPerNode) 
+            // }
+            def speed = 100.0
+            def short_time = Math.sqrt(2*500*500)/speed
+            def long_time = 2*short_time
             if(n==0){
                 
                 def counter = 0
                 node_list[0].motionModel = { ts -> 
-                    def setpoint = [speed: 100.mps, duration: 18.seconds]
+                    def setpoint = [speed: speed]
                     // print counter
                     switch(counter) {
                         case 0:
-                            // setpoint["heading"] = 0.deg
-                        case 2:
-                            
-                            setpoint["turnRate"] = 10.dps
-                            break
-                        case 3:
-                        case 5:
-                            // setpoint["heading"] = 180.deg
-                            setpoint["turnRate"] = 10.dps
-                        break
+                            setpoint["heading"] = 45.deg
+                            setpoint["duration"] = short_time
+                            break;
                         case 1:
-                            // setpoint["heading"] = 180.deg
-                            setpoint["turnRate"] = -10.dps
-                            break
+                            setpoint["heading"] = 135.deg
+                            setpoint["duration"] = long_time
+                            break;
+                        case 2:
+                            setpoint["heading"] = 45.deg
+                            setpoint["duration"] = long_time
+                            break;
+                        case 3:
+                            setpoint["heading"] = 135.deg
+                            setpoint["duration"] = short_time
+                            break;
                         case 4:
-                            // setpoint["heading"] = 0.deg
-                            setpoint["turnRate"] = -10.dps
-                        break
+                            setpoint["heading"] = -135.deg
+                            setpoint["duration"] = short_time
+                            break;
+                        case 5:
+                            setpoint["heading"] = -45.deg
+                            setpoint["duration"] = long_time
+                            break;
+                        case 6:
+                            setpoint["heading"] = -135.deg
+                            setpoint["duration"] = long_time
+                            break;
+                        case 7:
+                            setpoint["heading"] = -45.deg
+                            setpoint["duration"] = short_time
+                            break;
+
                         default:
                             setpoint["turnRate"] = 50.dps
                         break
                     }
-                    // println setpoint
-                    counter = (counter+1)%6
+                    println setpoint
+                    counter = (counter+1)%8
                     return setpoint
                 }
+            }else if (n==4){
+                    def counter2 = 0
+                    def speed2 = 200.0
+                    def straight_time = 2500/speed2
+                    def turn_time = 3600/speed2
+                    def turn_rate = speed2/20
+                    node_list[4].motionModel = { ts -> 
+                        def setpoint = [speed: speed2]
+                        // print counter
+                        switch(counter2) {
+                            case 0:
+                                setpoint["heading"] = 90.deg
+                                setpoint["turnRate"] = 0.deg
+                                setpoint["duration"] = straight_time
+                                break;
+                            case 1:
+                                setpoint["turnRate"] = turn_rate
+                                setpoint["duration"] = turn_time
+                                break;
+                            case 2:
+                                setpoint["heading"] = -90.deg
+                                setpoint["turnRate"] = 0.deg
+                                setpoint["duration"] = straight_time
+                                break;
+                            case 3:
+                                setpoint["turnRate"] = turn_rate
+                                setpoint["duration"] = turn_time
+                                break;
+
+                            default:
+                                setpoint["turnRate"] = 50.dps
+                            break
+                        }
+                        println setpoint
+                        counter2 = (counter2+1)%4
+                        return setpoint
+                    }
+            }
 
 
                 // node_list[0].motionModel = { ts -> 
@@ -232,7 +286,7 @@ for (def load = load_range[0]; load <= load_range[1]; load += load_range[2]) {
                 //     }
                 //     return setpoint
                 // }
-            }
+            
 
             
             
