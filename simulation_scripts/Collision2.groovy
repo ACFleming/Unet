@@ -18,15 +18,20 @@ modem.model =  org.arl.unet.sim.HalfDuplexModem
 
 
 
-channel.model = org.arl.unet.sim.channels.ProtocolChannelModel
-
-channel.fc = 11520.Hz // fc (as the default for JANUS)
-channel.soundSpeed = 1500.mps // c
-channel.communicationRange = 1500.m // Rc
-channel.detectionRange = 2500.m // Rd
-channel.interferenceRange = 1500.m // Ri
-channel.pDetection = 1 // pd
-channel.pDecoding =  1// pc
+channel = [
+    model:                  BasicAcousticChannel,
+    carrierFrequency:       25000.Hz, 
+    bandwidth:              4096.Hz, 
+    spreading:              2,
+    temperature:            25.C,
+    salinity:               35.ppt,
+    noiseLevel:             60.dB,
+    waterDepth:             20.m,
+    ricianK:                10, 
+    fastFading:             true, 
+    pfa:                    1e-6, 
+    processingGain:         0.dB, 
+]
 ///////////////////////////////////////////////////////////////////////////////
 // simulation details
 

@@ -256,6 +256,7 @@ class AlohaAN extends UnetAgent {
     private void sendData(TransmissionSlot tSlot)   
     {
         def phy  = agentForService(Services.PHYSICAL)
+        
          
 //Try to send data after lagTime if all checks permit the node to send
         add new WakerBehavior(lagTime, {           
