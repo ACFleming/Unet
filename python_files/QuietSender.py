@@ -24,8 +24,8 @@ def main(args = None):
             print("Sending quiet")
             result = phy.send(ut.TxFrameReq(to=0, data=[20]))
     elif(mode == 'pulse'):
-        for i in range(10):
-            time.sleep(0.25)
+        for i in range(50):
+            time.sleep(0.1)
             print("Sending quiet")
             result = phy.send(ut.TxFrameReq(to=0, data=[20]))
    

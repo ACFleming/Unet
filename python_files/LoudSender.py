@@ -1,6 +1,6 @@
 import unetpy as ut
 import fjagepy as fj
-import time
+import time 
 import sys
 
 
@@ -10,6 +10,7 @@ def main(args = None):
     socket = ut.UnetSocket('localhost', 1103)
     gateway = socket.getGateway()
     phy = gateway.agentForService(ut.Services.PHYSICAL)
+    phy.refPowerLevel = 200
     phy[1].powerLevel = 0
     phy[2].powerLevel = 0
     phy[3].powerLevel = 0
@@ -24,8 +25,8 @@ def main(args = None):
             print("Sending LOUD")
             result = phy.send(ut.TxFrameReq(to=0, data=[11,11,11,11]))
     elif(mode == 'pulse'):
-        for i in range(10):
-            time.sleep(0.25)
+        for i in range(50):
+            time.sleep(0.1)
             print("Sending LOUD")
             result = phy.send(ut.TxFrameReq(to=0, data=[11,11,11,11]))
    
