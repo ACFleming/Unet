@@ -58,17 +58,17 @@ Simulation
 
 scenarios = []
 
-def b = new BaseScenario()
-def o = new OffsetScenario()
-def h = new HighQuantityScenario()
-def l = new LowQuantityScenario()
-def c = new ClusterScenario()
+// def b = new BaseScenario()
+// def o = new OffsetScenario()
+// def h = new HighQuantityScenario()
+// def l = new LowQuantityScenario()
+// def c = new ClusterScenario()
 def cl = new CollinearScenario()
-def e = new EquidistantScenario()
-def mo = new MobileScenario()
+// def e = new EquidistantScenario()
+// def mo = new MobileScenario()
 
 
-def scenario = mo
+def scenario = cl
 
 // def mac_name = "ALOHA"
 
@@ -97,6 +97,7 @@ for (m in scenario.getMacs()){
 
     for (def load = scenario.load_range[0]; load <= scenario.load_range[1]; load += scenario.load_range[2]) {
         simulate  scenario.getT(), {
+        // simulate  {
 
             def node_list = []
 
@@ -120,11 +121,14 @@ for (m in scenario.getMacs()){
                 container.add 'transport',      new org.arl.unet.transport.SWTransport()
                 container.add 'router',         new org.arl.unet.net.Router()
                 container.add 'rdp',            new org.arl.unet.net.RouteDiscoveryProtocol()
-                container.add 'mac',            macAgent 
+                container.add 'mac',            macAgent
+                
                 
                 }) 
                 node_list[n].motionModel = scenario.getMotion(n)
-                
+                // if(n==0){
+                //     container.add 'tick',           new TickAgent()
+                // }
                 // print "Loads and routes\n"
                 def ld = scenario.getGenerator(n, loadPerNode)
                 container.add 'load', ld

@@ -8,3 +8,5 @@ bin/*
 logs/*
 *.log
 *.class
+*.csv
+MAC_FILES.zip

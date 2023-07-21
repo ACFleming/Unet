@@ -46,8 +46,8 @@ class CollinearScenario extends BaseScenario{
             // this.getAddressList
             if(n == 0){
                 d = [this.getAddressList()[4]]
-            }else if(n == 4){
-                d = [this.getAddressList()[0]]
+            // }else if(n == 4){
+            //     d = [this.getAddressList()[0]]
             }else{
                 d.clear()
             }

@@ -766,6 +766,7 @@ class AlohaAN extends UnetAgent {
           case ReservationReq:
             if (msg.duration <= 0) 
             {
+                print("Refused because duration (${msg.duration}) < 0\n")
                 return new Message(msg, Performative.REFUSE)   // check requested duration
             }
             else
@@ -774,7 +775,8 @@ class AlohaAN extends UnetAgent {
             }
           case ReservationCancelReq:
           case ReservationAcceptReq:                                  // respond to other requests defined
-          case TxAckReq:                                              //  by the MAC service trivially with
+          case TxAckReq:  
+            print("Refused because unrecognised\n")                                            //  by the MAC service trivially with
             return new Message(msg, Performative.REFUSE)              //  a REFUSE performative
         }
         return null     

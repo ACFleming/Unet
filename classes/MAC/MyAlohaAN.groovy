@@ -22,6 +22,7 @@ import org.arl.unet.nodeinfo.NodeInfo
 import org.apache.commons.math3.ml.distance.DistanceMeasure
 // import org.eclipse.jetty.util.MathUtils
 import org.codehaus.groovy.vmplugin.v8.Java8
+import org.arl.unet.mac.MacParam
 import java.util.*
 import org.arl.unet.mac.*
 import org.arl.unet.utils.*
@@ -355,9 +356,11 @@ class MyAlohaAN extends UnetAgent {
         add new WakerBehavior(lagTime, {           
             if(tSlot != null)
             {
-                int currentTime = getCurrentTime()  
+                int currentTime = getCurrentTime() 
+                print "Current time ${currentTime} slot start ${tSlot.startTimeData} \n"
                 if(currentTime < tSlot.startTimeData) //this implies that the transmission was deferred due to a clash with another node implied by a ntf packet
                 {
+                    
                     int bo = (Integer)((tSlot.startTimeNtf - currentTime) / dataMsgDuration)
                     backoff(bo,tSlot) 
                 }
@@ -403,6 +406,7 @@ class MyAlohaAN extends UnetAgent {
                             else
                             {
                                 //packet is backed off and sending slots updated as collision check returns negative
+                                print "Collision clash backoff\n"
                                 int bo = deferTransmissionsCollisionCheck(tSlot)
                                 backoff(bo,tSlot)           
                             }               
@@ -420,6 +424,7 @@ class MyAlohaAN extends UnetAgent {
                         else
                         {
                             //packet is backed off and sending slots updated as collision check returns negative
+                            print "Transmission clash backoff\n"
                             int bo = deferTransmissionsCollisionCheck(tSlot)
                             backoff(bo,tSlot)
         
@@ -943,7 +948,7 @@ class MyAlohaAN extends UnetAgent {
     int dataMsgDuration, controlMsgDuration
 
     List<Parameter> getParameterList() {
-        allOf(AlohaANParam)
+        allOf(AlohaANParam, MacParam)
     }
 
 }
